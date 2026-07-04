@@ -178,6 +178,77 @@ body.is-authenticated .dashboard {
   justify-content: center;
 }
 
+.link-builder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.link-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.link-form label {
+  margin-bottom: 0;
+}
+
+.link-form .primary-btn {
+  width: auto;
+  min-width: 126px;
+}
+
+.copy-box {
+  display: none;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid rgba(255, 213, 74, .24);
+  border-radius: 8px;
+  background: rgba(255, 213, 74, .08);
+}
+
+.copy-box.is-visible {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.copy-box label {
+  margin-bottom: 0;
+}
+
+.link-url {
+  display: block;
+  max-width: 360px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-id {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.breakdown {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.copy-status {
+  min-height: 18px;
+  padding: 0 16px 14px;
+  color: var(--ok);
+  font-size: 13px;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -342,6 +413,15 @@ tbody tr:last-child td {
   .summary-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .link-form,
+  .copy-box.is-visible {
+    grid-template-columns: 1fr;
+  }
+
+  .link-form .primary-btn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
@@ -397,6 +477,7 @@ tbody tr:last-child td {
 
     <div class="actions" aria-label="เครื่องมือแดชบอร์ด">
       <a class="ghost-btn" href="index.html">กลับหน้า Bio</a>
+      <a class="ghost-btn" href="#linkBuilderTitle">สร้างลิงก์ Bio</a>
       <button class="ghost-btn" id="refreshBtn" type="button">รีเฟรช</button>
       <button class="ghost-btn" id="exportBtn" type="button">ส่งออก CSV</button>
       <button class="danger-btn" id="resetBtn" type="button">รีเซ็ตสถิติ</button>
@@ -428,6 +509,56 @@ tbody tr:last-child td {
       <strong id="lastButton">-</strong>
       <small id="lastClickedAt">ยังไม่มีข้อมูล</small>
     </article>
+  </section>
+
+  <section class="panel" aria-labelledby="linkBuilderTitle">
+    <div class="panel-header">
+      <div>
+        <h2 id="linkBuilderTitle">สร้างลิงก์ Bio</h2>
+        <span>สร้างลิงก์แยกตามแพลตฟอร์ม แล้วคัดลอกไปวางใช้งานได้ทันที</span>
+      </div>
+      <span id="linkCountLabel">0 ลิงก์</span>
+    </div>
+
+    <div class="link-builder">
+      <form class="link-form" id="linkForm">
+        <label for="linkName">
+          ชื่อแพลตฟอร์ม / แคมเปญ
+          <input id="linkName" name="linkName" type="text" placeholder="เช่น Facebook, TikTok, Line OA" required>
+        </label>
+
+        <label for="linkSlug">
+          รหัสลิงก์
+          <input id="linkSlug" name="linkSlug" type="text" placeholder="เช่น facebook" inputmode="latin">
+        </label>
+
+        <button class="primary-btn" type="submit">สร้างลิงก์</button>
+      </form>
+
+      <div class="copy-box" id="createdLinkBox" aria-live="polite">
+        <label for="createdLinkUrl">
+          ลิงก์พร้อมใช้งาน
+          <input id="createdLinkUrl" type="text" readonly>
+        </label>
+        <button class="ghost-btn" id="copyCreatedLinkBtn" type="button">คัดลอก</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ลิงก์</th>
+            <th>จำนวนคลิก</th>
+            <th>แยกตามปุ่ม</th>
+            <th>คลิกล่าสุด</th>
+            <th>คัดลอก</th>
+          </tr>
+        </thead>
+        <tbody id="linkRows"></tbody>
+      </table>
+    </div>
+    <p class="copy-status" id="copyStatus"></p>
   </section>
 
   <section class="panel" aria-labelledby="buttonStatsTitle">
@@ -476,6 +607,13 @@ const refreshBtn = document.getElementById("refreshBtn");
 const exportBtn = document.getElementById("exportBtn");
 const resetBtn = document.getElementById("resetBtn");
 const logoutBtn = document.getElementById("logoutBtn");
+const linkForm = document.getElementById("linkForm");
+const linkNameInput = document.getElementById("linkName");
+const linkSlugInput = document.getElementById("linkSlug");
+const createdLinkBox = document.getElementById("createdLinkBox");
+const createdLinkUrl = document.getElementById("createdLinkUrl");
+const copyCreatedLinkBtn = document.getElementById("copyCreatedLinkBtn");
+const copyStatus = document.getElementById("copyStatus");
 
 function createEmptyStats() {
   return {
@@ -486,6 +624,7 @@ function createEmptyStats() {
         return [id, { id: id, label: label, count: 0, lastClickedAt: null }];
       })
     ),
+    links: {},
     events: []
   };
 }
@@ -538,6 +677,115 @@ function getButtonRows(stats) {
   });
 }
 
+function buildBioLinkUrl(linkId) {
+  if (window.location.protocol === "file:") {
+    return `index.html${linkId && linkId !== "direct" ? `?ref=${encodeURIComponent(linkId)}` : ""}`;
+  }
+
+  const url = new URL("/", window.location.origin);
+  if (linkId && linkId !== "direct") {
+    url.searchParams.set("ref", linkId);
+  }
+  return url.toString();
+}
+
+function getLinkRows(stats) {
+  return Object.values(stats.links || {}).map(function (link) {
+    return {
+      id: link.id || "direct",
+      name: link.name || link.id || "ลิงก์ Bio",
+      url: link.url || buildBioLinkUrl(link.id),
+      count: Number(link.count) || 0,
+      buttons: link.buttons || {},
+      createdAt: link.createdAt || null,
+      lastClickedAt: link.lastClickedAt || null
+    };
+  }).sort(function (a, b) {
+    if (a.id === "direct") {
+      return 1;
+    }
+    if (b.id === "direct") {
+      return -1;
+    }
+    return (b.count || 0) - (a.count || 0);
+  });
+}
+
+function formatButtonBreakdown(link) {
+  const parts = Object.entries(trackedButtonDefaults).map(function ([id, label]) {
+    const count = Number(link.buttons && link.buttons[id]) || 0;
+    return count > 0 ? `${label}: ${formatNumber(count)}` : "";
+  }).filter(Boolean);
+
+  return parts.length ? parts.join("<br>") : "ยังไม่มีคลิก";
+}
+
+async function copyText(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+function showCopyStatus(message) {
+  copyStatus.textContent = message;
+  window.clearTimeout(showCopyStatus.timer);
+  showCopyStatus.timer = window.setTimeout(function () {
+    copyStatus.textContent = "";
+  }, 2400);
+}
+
+function bindCopyButtons() {
+  document.querySelectorAll("[data-copy-link]").forEach(function (button) {
+    button.addEventListener("click", async function () {
+      try {
+        await copyText(button.dataset.copyLink);
+        showCopyStatus("คัดลอกลิงก์แล้ว");
+      } catch (error) {
+        showCopyStatus("คัดลอกไม่สำเร็จ");
+      }
+    });
+  });
+}
+
+function renderLinkRows(stats) {
+  const rows = getLinkRows(stats);
+  document.getElementById("linkCountLabel").textContent = `${formatNumber(rows.filter(function (link) {
+    return link.id !== "direct";
+  }).length)} ลิงก์`;
+
+  document.getElementById("linkRows").innerHTML = rows.length
+    ? rows.map(function (link) {
+        const url = link.url || buildBioLinkUrl(link.id);
+        return `
+          <tr>
+            <td>
+              <strong>${escapeHtml(link.name)}</strong><br>
+              <span class="link-id">${escapeHtml(link.id)}</span><br>
+              <span class="link-url">${escapeHtml(url)}</span>
+            </td>
+            <td><span class="count">${formatNumber(link.count)}</span></td>
+            <td class="breakdown">${formatButtonBreakdown(link)}</td>
+            <td>${formatDate(link.lastClickedAt)}</td>
+            <td><button class="ghost-btn" type="button" data-copy-link="${escapeHtml(url)}">คัดลอก</button></td>
+          </tr>
+        `;
+      }).join("")
+    : '<tr><td colspan="5" class="empty-state">ยังไม่มีลิงก์ที่สร้าง</td></tr>';
+
+  bindCopyButtons();
+}
+
 async function apiRequest(url, options) {
   if (window.location.protocol === "file:") {
     throw new Error("file_mode");
@@ -584,6 +832,7 @@ function renderStats(stats) {
   document.getElementById("lastClickedAt").textContent = latestEvent ? formatDate(latestEvent.clickedAt) : "ยังไม่มีข้อมูล";
   document.getElementById("lastUpdated").textContent = normalizedStats.updatedAt ? formatDate(normalizedStats.updatedAt) : "ยังไม่มีข้อมูล";
   document.getElementById("tableStatus").textContent = normalizedStats.updatedAt ? formatDate(normalizedStats.updatedAt) : "ยังไม่มีข้อมูล";
+  renderLinkRows(normalizedStats);
 
   document.getElementById("statsRows").innerHTML = rows.map(function (button) {
     const percent = total > 0 ? Math.round((button.count / total) * 100) : 0;
@@ -607,6 +856,7 @@ function renderStats(stats) {
             <div>
               <strong>${escapeHtml(event.label)}</strong>
               <span>${escapeHtml(event.href || "หน้า Bio")}</span>
+              <span>ลิงก์: ${escapeHtml(event.sourceName || event.sourceId || "เข้าตรง")}</span>
             </div>
             <span>${formatDate(event.clickedAt)}</span>
           </li>
@@ -676,6 +926,43 @@ loginForm.addEventListener("submit", async function (event) {
     loginError.textContent = error.message === "file_mode"
       ? "กรุณาเปิดผ่าน server เช่น http://localhost:8787/dashboard.html"
       : "ยูซเซอร์หรือรหัสผ่านไม่ถูกต้อง";
+  }
+});
+
+linkForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  copyStatus.textContent = "กำลังสร้างลิงก์";
+
+  try {
+    const result = await apiRequest("/api/links", {
+      method: "POST",
+      body: JSON.stringify({
+        name: linkNameInput.value.trim(),
+        slug: linkSlugInput.value.trim()
+      })
+    });
+    const link = result.link || {};
+    const url = link.url || buildBioLinkUrl(link.id);
+    createdLinkUrl.value = url;
+    createdLinkBox.classList.add("is-visible");
+    linkSlugInput.value = "";
+    await renderDashboard();
+    showCopyStatus("สร้างลิงก์แล้ว กดคัดลอกเพื่อนำไปใช้งาน");
+  } catch (error) {
+    if (error.message === "unauthorized") {
+      showLogin("กรุณาเข้าสู่ระบบอีกครั้ง");
+      return;
+    }
+    showCopyStatus("สร้างลิงก์ไม่สำเร็จ");
+  }
+});
+
+copyCreatedLinkBtn.addEventListener("click", async function () {
+  try {
+    await copyText(createdLinkUrl.value);
+    showCopyStatus("คัดลอกลิงก์แล้ว");
+  } catch (error) {
+    showCopyStatus("คัดลอกไม่สำเร็จ");
   }
 });
 

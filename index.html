@@ -388,6 +388,33 @@ const trackedButtonDefaults = {
   "contact-admin": "ติดต่อแอดมิน"
 };
 
+function cleanSourceId(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+function getCurrentBioSource() {
+  const params = new URLSearchParams(window.location.search);
+  const sourceId = cleanSourceId(
+    params.get("ref") ||
+    params.get("source") ||
+    params.get("bio") ||
+    params.get("utm_source")
+  ) || "direct";
+
+  return {
+    id: sourceId,
+    name: params.get("source_name") || params.get("utm_campaign") || sourceId,
+    url: window.location.href
+  };
+}
+
+const currentBioSource = getCurrentBioSource();
+
 function createClickStats() {
   return {
     version: 1,
@@ -479,7 +506,10 @@ function recordClick(button) {
     id: id,
     label: label,
     href: button.getAttribute("href") || "",
-    page: window.location.pathname || "index.html",
+    page: `${window.location.pathname || "index.html"}${window.location.search || ""}`,
+    sourceId: currentBioSource.id,
+    sourceName: currentBioSource.name,
+    sourceUrl: currentBioSource.url,
     clickedAt: now
   };
 

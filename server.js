@@ -18,6 +18,8 @@ const trackedButtonDefaults = {
   promotion: "โปรโมชั่น",
   "contact-admin": "ติดต่อแอดมิน"
 };
+const directLinkId = "direct";
+const directLinkName = "เข้าตรง / ไม่มีรหัสลิงก์";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -46,7 +48,71 @@ function createClickStats() {
         { id, label, count: 0, lastClickedAt: null }
       ])
     ),
+    links: {
+      [directLinkId]: createBioLinkRecord(directLinkId, directLinkName, null)
+    },
     events: []
+  };
+}
+
+function createEmptyButtonCounts() {
+  return Object.fromEntries(Object.keys(trackedButtonDefaults).map((id) => [id, 0]));
+}
+
+function createBioLinkRecord(id, name, createdAt) {
+  return {
+    id,
+    name,
+    url: "",
+    count: 0,
+    buttons: createEmptyButtonCounts(),
+    createdAt: createdAt || new Date().toISOString(),
+    lastClickedAt: null
+  };
+}
+
+function cleanSlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+function createRandomSlug() {
+  return `bio-${crypto.randomBytes(3).toString("hex")}`;
+}
+
+function getPublicBaseUrl(req) {
+  const proto = String(req.headers["x-forwarded-proto"] || "http").split(",")[0].trim();
+  const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+  return `${proto}://${host}`;
+}
+
+function buildBioUrl(req, sourceId) {
+  const url = new URL("/", getPublicBaseUrl(req));
+  if (sourceId && sourceId !== directLinkId) {
+    url.searchParams.set("ref", sourceId);
+  }
+  return url.toString();
+}
+
+function normalizeBioLink(id, value) {
+  const link = value && typeof value === "object" ? value : {};
+  const normalizedId = cleanSlug(link.id || id) || directLinkId;
+  const buttons = link.buttons && typeof link.buttons === "object" ? link.buttons : {};
+
+  return {
+    id: normalizedId,
+    name: cleanText(link.name, normalizedId === directLinkId ? directLinkName : normalizedId),
+    url: cleanText(link.url),
+    count: Number(link.count) || 0,
+    buttons: Object.fromEntries(
+      Object.keys(trackedButtonDefaults).map((buttonId) => [buttonId, Number(buttons[buttonId]) || 0])
+    ),
+    createdAt: link.createdAt || null,
+    lastClickedAt: link.lastClickedAt || null
   };
 }
 
@@ -69,6 +135,21 @@ function normalizeStats(stats) {
 
   if (!Array.isArray(normalized.events)) {
     normalized.events = [];
+  }
+
+  if (!normalized.links || typeof normalized.links !== "object") {
+    normalized.links = {};
+  }
+
+  normalized.links = Object.fromEntries(
+    Object.entries(normalized.links).map(([id, link]) => {
+      const normalizedLink = normalizeBioLink(id, link);
+      return [normalizedLink.id, normalizedLink];
+    })
+  );
+
+  if (!normalized.links[directLinkId]) {
+    normalized.links[directLinkId] = createBioLinkRecord(directLinkId, directLinkName, null);
   }
 
   normalized.totalClicks = Object.values(normalized.buttons).reduce(
@@ -190,6 +271,15 @@ function getClientIp(req) {
   return Array.isArray(forwarded) ? forwarded[0] : String(forwarded || req.socket.remoteAddress || "").split(",")[0].trim();
 }
 
+function getClickSource(body) {
+  const sourceId = cleanSlug(body.sourceId || body.ref || body.utmSource || body.utm_source) || directLinkId;
+  return {
+    id: sourceId,
+    name: cleanText(body.sourceName || body.sourceLabel || body.utmCampaign || body.utm_campaign, sourceId === directLinkId ? directLinkName : sourceId),
+    url: cleanText(body.sourceUrl)
+  };
+}
+
 async function handleClick(req, res) {
   const body = await readBody(req);
   const id = cleanText(body.id);
@@ -201,6 +291,7 @@ async function handleClick(req, res) {
 
   const label = cleanText(body.label, trackedButtonDefaults[id]);
   const now = new Date().toISOString();
+  const source = getClickSource(body);
 
   writeQueue = writeQueue.then(async () => {
     const stats = await readStats();
@@ -214,11 +305,24 @@ async function handleClick(req, res) {
     stats.buttons[id].lastClickedAt = now;
     stats.totalClicks += 1;
     stats.updatedAt = now;
+
+    if (!stats.links[source.id]) {
+      stats.links[source.id] = createBioLinkRecord(source.id, source.name, now);
+    }
+    stats.links[source.id].name = stats.links[source.id].name || source.name;
+    stats.links[source.id].url = stats.links[source.id].url || source.url || buildBioUrl(req, source.id);
+    stats.links[source.id].count += 1;
+    stats.links[source.id].buttons[id] = (Number(stats.links[source.id].buttons[id]) || 0) + 1;
+    stats.links[source.id].lastClickedAt = now;
+
     stats.events.unshift({
       id,
       label,
       href: cleanText(body.href),
       page: cleanText(body.page),
+      sourceId: source.id,
+      sourceName: stats.links[source.id].name,
+      sourceUrl: stats.links[source.id].url,
       clickedAt: now,
       ip: getClientIp(req),
       userAgent: cleanText(req.headers["user-agent"])
@@ -226,7 +330,42 @@ async function handleClick(req, res) {
     stats.events = stats.events.slice(0, 1000);
 
     await writeStats(stats);
-    send(res, 201, { ok: true, totalClicks: stats.totalClicks });
+    send(res, 201, { ok: true, totalClicks: stats.totalClicks, sourceId: source.id });
+  });
+
+  await writeQueue;
+}
+
+async function handleCreateBioLink(req, res) {
+  const body = await readBody(req);
+  const name = cleanText(body.name || body.platform || body.label, "ลิงก์ Bio");
+  const requestedId = cleanSlug(body.id || body.slug || name);
+  const now = new Date().toISOString();
+
+  writeQueue = writeQueue.then(async () => {
+    const stats = await readStats();
+    let id = requestedId || createRandomSlug();
+
+    while (id === directLinkId || (stats.links[id] && !requestedId)) {
+      id = createRandomSlug();
+    }
+
+    if (!stats.links[id]) {
+      stats.links[id] = createBioLinkRecord(id, name, now);
+    } else {
+      stats.links[id].name = name || stats.links[id].name;
+    }
+
+    stats.links[id].url = buildBioUrl(req, id);
+    await writeStats(stats);
+
+    send(res, 201, {
+      ok: true,
+      link: {
+        ...stats.links[id],
+        url: stats.links[id].url
+      }
+    });
   });
 
   await writeQueue;
@@ -262,6 +401,7 @@ function csvCell(value) {
 
 function statsToCsv(stats) {
   const lines = [
+    ["button_stats"].map(csvCell).join(","),
     ["button_id", "button_label", "clicks", "last_clicked_at"].map(csvCell).join(",")
   ];
 
@@ -270,7 +410,35 @@ function statsToCsv(stats) {
     lines.push([id, button.label, button.count, button.lastClickedAt || ""].map(csvCell).join(","));
   });
 
+  lines.push("");
+  lines.push(["bio_link_stats"].map(csvCell).join(","));
+  lines.push(["link_id", "link_name", "link_url", "clicks", "last_clicked_at"].map(csvCell).join(","));
+  Object.values(stats.links || {})
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .forEach((link) => {
+      lines.push([link.id, link.name, link.url || "", link.count || 0, link.lastClickedAt || ""].map(csvCell).join(","));
+    });
+
   return lines.join("\n");
+}
+
+function resetClickCounts(stats) {
+  const reset = createClickStats();
+  reset.links = Object.fromEntries(
+    Object.entries(stats.links || {}).map(([id, link]) => {
+      const normalized = normalizeBioLink(id, link);
+      return [
+        normalized.id,
+        {
+          ...normalized,
+          count: 0,
+          buttons: createEmptyButtonCounts(),
+          lastClickedAt: null
+        }
+      ];
+    })
+  );
+  return reset;
 }
 
 async function handleStatic(req, res, pathname) {
@@ -324,6 +492,14 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/links") {
+      if (!requireSession(req, res)) {
+        return;
+      }
+      await handleCreateBioLink(req, res);
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/logout") {
       await handleLogout(req, res);
       return;
@@ -346,7 +522,7 @@ async function handleRequest(req, res) {
       if (!requireSession(req, res)) {
         return;
       }
-      await writeStats(createClickStats());
+      await writeStats(resetClickCounts(await readStats()));
       send(res, 200, { ok: true });
       return;
     }
