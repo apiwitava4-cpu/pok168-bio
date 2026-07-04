@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: p9-bio-analytics
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: DASHBOARD_USER
+        value: admin
+      - key: DASHBOARD_PASSWORD
+        sync: false
+    disk:
+      name: p9-bio-data
+      mountPath: /var/data
+      sizeGB: 1

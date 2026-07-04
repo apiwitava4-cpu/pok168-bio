@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P9 BIO</title>
+<meta name="theme-color" content="#050505">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, "Tahoma", sans-serif;
+  color: #fff;
+  background:
+    radial-gradient(circle at top, rgba(255, 213, 74, .16), transparent 34%),
+    linear-gradient(180deg, #050505 0%, #101010 45%, #050505 100%);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+  text-align: center;
+  background: rgba(20, 20, 20, .94);
+  border: 1px solid rgba(255, 213, 74, .55);
+  border-radius: 18px;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, .42), 0 0 34px rgba(255, 200, 0, .13);
+}
+
+.profile {
+  width: 154px;
+  height: 154px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  border: 3px solid #ffd54a;
+  border-radius: 50%;
+  background: #050505;
+  box-shadow: 0 0 28px rgba(255, 213, 74, .24);
+}
+
+.profile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+h1 {
+  margin-bottom: 8px;
+  color: #ffd54a;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+p {
+  margin-bottom: 28px;
+  color: rgba(255, 255, 255, .78);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 54px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 12px;
+  color: #111;
+  background: linear-gradient(90deg, #ffdc63, #b98918);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(255, 215, 0, .28);
+  filter: brightness(1.04);
+  outline: none;
+}
+
+footer {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, .5);
+  font-size: 13px;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .82);
+}
+
+.modal.is-open {
+  display: flex;
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  max-height: 88vh;
+  overflow: auto;
+  padding: 22px;
+  background: #111;
+  border: 1px solid #ffd54a;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus-visible {
+  background: rgba(255, 255, 255, .18);
+  outline: none;
+}
+
+.modal h2 {
+  padding-right: 38px;
+  color: #ffd54a;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.promo-card {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 213, 74, .35);
+  border-radius: 12px;
+  background: #050505;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+}
+
+.promo-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: #050505;
+}
+
+.promo-card figcaption {
+  padding: 10px 12px;
+  color: #ffd54a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (min-width: 600px) {
+  .gallery {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  body {
+    padding: 18px;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  .profile {
+    width: 132px;
+    height: 132px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .btn {
+    font-size: 16px;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="card">
+  <div class="profile" aria-label="P9">
+    <img src="p9/photo_2026-06-29_08-24-34.jpg" alt="P9">
+  </div>
+
+  <h1>P9</h1>
+  <p>บ้านป๊อกเด้งออนไลน์</p>
+
+  <a
+    class="btn"
+    href="https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service"
+    data-track-id="visit-site"
+    data-track-label="เข้าชมหน้าเว็บ"
+    target="_blank"
+    rel="noopener noreferrer">
+    เข้าชมหน้าเว็บ
+  </a>
+
+  <a
+    class="btn"
+    href="https://ag.p9deng.com/?code=AG0239EW&utm_source=bio&utm_medium=button&utm_campaign=p9_service"
+    data-track-id="register"
+    data-track-label="สมัครสมาชิก"
+    target="_blank"
+    rel="noopener noreferrer">
+    สมัครสมาชิก
+  </a>
+
+  <a class="btn" href="#" id="promoBtn" role="button" aria-controls="promoModal" aria-expanded="false" data-track-id="promotion" data-track-label="โปรโมชั่น">
+    โปรโมชั่น
+  </a>
+
+  <a
+    class="btn"
+    href="https://lin.ee/tQqumsi?utm_source=bio&utm_medium=button&utm_campaign=p9_service"
+    data-track-id="contact-admin"
+    data-track-label="ติดต่อแอดมิน"
+    target="_blank"
+    rel="noopener noreferrer">
+    ติดต่อแอดมิน
+  </a>
+
+  <footer>&copy; P9 BIO</footer>
+</main>
+
+<div class="modal" id="promoModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="promoTitle">
+    <button class="close" type="button" aria-label="ปิดหน้าต่าง">&times;</button>
+    <h2 id="promoTitle">โปรโมชั่นล่าสุด</h2>
+
+    <div class="gallery">
+      <figure class="promo-card">
+        <img src="promo/promo-new-member.webp" alt="โปรโมชั่นสมาชิกใหม่">
+        <figcaption>สมาชิกใหม่</figcaption>
+      </figure>
+
+      <figure class="promo-card">
+        <img src="promo/promo-daily-10.webp" alt="โปรโมชั่นรับ 10 เปอร์เซ็นต์ทุกวัน">
+        <figcaption>รับ 10% ทุกวัน</figcaption>
+      </figure>
+
+      <figure class="promo-card">
+        <img src="promo/promo-cashback-2.webp" alt="โปรโมชั่นคืนยอด 2 เปอร์เซ็นต์">
+        <figcaption>คืนยอด 2%</figcaption>
+      </figure>
+
+      <figure class="promo-card">
+        <img src="promo/promo-special-event.webp" alt="โปรโมชั่นกิจกรรมพิเศษ">
+        <figcaption>กิจกรรมพิเศษ</figcaption>
+      </figure>
+
+      <figure class="promo-card">
+        <img src="promo/promo-pokdeng-online.webp" alt="โปรโมชั่นป๊อกเด้งออนไลน์">
+        <figcaption>ป๊อกเด้งออนไลน์</figcaption>
+      </figure>
+
+      <figure class="promo-card">
+        <img src="promo/promo-5.webp" alt="โปรโมชั่น 5">
+        <figcaption>โปรโมชั่น 5</figcaption>
+      </figure>
+    </div>
+  </div>
+</div>
+
+<script>
+const clickStatsKey = "p9BioClickStats";
+const trackedButtonDefaults = {
+  "visit-site": "เข้าชมหน้าเว็บ",
+  "register": "สมัครสมาชิก",
+  "promotion": "โปรโมชั่น",
+  "contact-admin": "ติดต่อแอดมิน"
+};
+
+function createClickStats() {
+  return {
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: null,
+    totalClicks: 0,
+    buttons: Object.fromEntries(
+      Object.entries(trackedButtonDefaults).map(function ([id, label]) {
+        return [id, { id: id, label: label, count: 0, lastClickedAt: null }];
+      })
+    ),
+    events: []
+  };
+}
+
+function loadClickStats() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(clickStatsKey));
+    const stats = saved && typeof saved === "object" ? saved : createClickStats();
+
+    Object.entries(trackedButtonDefaults).forEach(function ([id, label]) {
+      if (!stats.buttons) {
+        stats.buttons = {};
+      }
+
+      if (!stats.buttons[id]) {
+        stats.buttons[id] = { id: id, label: label, count: 0, lastClickedAt: null };
+      }
+    });
+
+    if (!Array.isArray(stats.events)) {
+      stats.events = [];
+    }
+
+    if (typeof stats.totalClicks !== "number") {
+      stats.totalClicks = Object.values(stats.buttons).reduce(function (sum, button) {
+        return sum + (Number(button.count) || 0);
+      }, 0);
+    }
+
+    return stats;
+  } catch (error) {
+    return createClickStats();
+  }
+}
+
+function saveClickStats(stats) {
+  try {
+    localStorage.setItem(clickStatsKey, JSON.stringify(stats));
+  } catch (error) {
+    console.warn("Unable to save click stats", error);
+  }
+}
+
+function sendClickToBackend(clickEvent) {
+  if (window.location.protocol === "file:") {
+    return;
+  }
+
+  const payload = JSON.stringify(clickEvent);
+
+  if (navigator.sendBeacon) {
+    try {
+      const sent = navigator.sendBeacon("/api/clicks", new Blob([payload], { type: "application/json" }));
+      if (sent) {
+        return;
+      }
+    } catch (error) {
+      console.warn("Unable to send click with beacon", error);
+    }
+  }
+
+  fetch("/api/clicks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true
+  }).catch(function (error) {
+    console.warn("Unable to send click stats", error);
+  });
+}
+
+function recordClick(button) {
+  const id = button.dataset.trackId;
+  const label = button.dataset.trackLabel || trackedButtonDefaults[id] || button.textContent.trim();
+  const now = new Date().toISOString();
+  const stats = loadClickStats();
+  const clickEvent = {
+    id: id,
+    label: label,
+    href: button.getAttribute("href") || "",
+    page: window.location.pathname || "index.html",
+    clickedAt: now
+  };
+
+  if (!stats.buttons[id]) {
+    stats.buttons[id] = { id: id, label: label, count: 0, lastClickedAt: null };
+  }
+
+  stats.buttons[id].label = label;
+  stats.buttons[id].count += 1;
+  stats.buttons[id].lastClickedAt = now;
+  stats.totalClicks += 1;
+  stats.updatedAt = now;
+  stats.events.unshift(clickEvent);
+  stats.events = stats.events.slice(0, 200);
+
+  saveClickStats(stats);
+  sendClickToBackend(clickEvent);
+}
+
+document.querySelectorAll("[data-track-id]").forEach(function (button) {
+  button.addEventListener("click", function () {
+    recordClick(button);
+  });
+});
+
+const modal = document.getElementById("promoModal");
+const promoBtn = document.getElementById("promoBtn");
+const closeBtn = document.querySelector(".close");
+
+function openModal() {
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+  promoBtn.setAttribute("aria-expanded", "true");
+  closeBtn.focus();
+}
+
+function closeModal() {
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden", "true");
+  promoBtn.setAttribute("aria-expanded", "false");
+  promoBtn.focus();
+}
+
+promoBtn.addEventListener("click", function (event) {
+  event.preventDefault();
+  openModal();
+});
+
+closeBtn.addEventListener("click", closeModal);
+
+modal.addEventListener("click", function (event) {
+  if (event.target === modal) {
+    closeModal();
+  }
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape" && modal.classList.contains("is-open")) {
+    closeModal();
+  }
+});
+</script>
+</body>
+</html>
