@@ -35,7 +35,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -83,7 +84,8 @@ label {
   font-weight: 700;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   min-height: 46px;
   margin-top: 8px;
@@ -95,7 +97,13 @@ input {
   outline: none;
 }
 
-input:focus {
+textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(255, 213, 74, .12);
 }
@@ -245,6 +253,93 @@ body.is-authenticated .dashboard {
 .copy-status {
   min-height: 18px;
   padding: 0 16px 14px;
+  color: var(--ok);
+  font-size: 13px;
+}
+
+.bio-editor {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.editor-block {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.editor-block-title,
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.editor-block-title strong {
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.editable-list {
+  display: grid;
+  gap: 10px;
+}
+
+.editable-row {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.45fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.promo-row {
+  grid-template-columns: 74px minmax(0, .85fr) minmax(0, 1.45fr) auto auto;
+}
+
+.thumb {
+  width: 74px;
+  height: 54px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 213, 74, .28);
+  border-radius: 8px;
+  background: #050505;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.inline-check input {
+  width: auto;
+  min-height: auto;
+  margin: 0;
+}
+
+.bio-editor-status {
+  min-height: 20px;
   color: var(--ok);
   font-size: 13px;
 }
@@ -483,6 +578,17 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .editor-grid,
+  .editable-row,
+  .promo-row {
+    grid-template-columns: 1fr;
+  }
+
+  .thumb {
+    width: 100%;
+    height: 140px;
+  }
+
   .link-form .primary-btn {
     width: 100%;
   }
@@ -541,6 +647,7 @@ tbody tr:last-child td {
 
     <div class="actions" aria-label="เครื่องมือแดชบอร์ด">
       <a class="ghost-btn" href="index.html">กลับหน้า Bio</a>
+      <a class="ghost-btn" href="#bioEditorTitle">จัดการหน้า Bio</a>
       <a class="ghost-btn" href="#linkBuilderTitle">สร้างลิงก์ Bio</a>
       <a class="ghost-btn" href="#linkChartTitle">กราฟลิงก์</a>
       <button class="ghost-btn" id="refreshBtn" type="button">รีเฟรช</button>
@@ -574,6 +681,117 @@ tbody tr:last-child td {
       <strong id="lastButton">-</strong>
       <small id="lastClickedAt">ยังไม่มีข้อมูล</small>
     </article>
+  </section>
+
+  <section class="panel" aria-labelledby="bioEditorTitle">
+    <div class="panel-header">
+      <div>
+        <h2 id="bioEditorTitle">จัดการหน้า Bio</h2>
+        <span>แก้ลิงก์ปุ่ม สมัคร/ติดต่อแอดมิน เพิ่มปุ่มใหม่ และจัดการรูปโปรโมชั่น</span>
+      </div>
+      <span id="bioConfigUpdated">ยังไม่มีการแก้ไข</span>
+    </div>
+
+    <form class="bio-editor" id="bioConfigForm">
+      <div class="editor-grid">
+        <label for="bioTitleInput">
+          ชื่อแบรนด์
+          <input id="bioTitleInput" type="text" required>
+        </label>
+
+        <label for="bioSubtitleInput">
+          ข้อความใต้ชื่อ
+          <input id="bioSubtitleInput" type="text">
+        </label>
+
+        <label for="bioFooterInput">
+          ข้อความท้ายหน้า
+          <input id="bioFooterInput" type="text">
+        </label>
+
+        <label for="profileImageInput">
+          รูปโปรไฟล์ / โลโก้
+          <input id="profileImageInput" type="text" placeholder="เช่น p9/brand-profile.webp หรือ /uploads/logo.webp">
+        </label>
+
+        <label for="profileUploadInput">
+          อัปโหลดรูปโปรไฟล์
+          <input id="profileUploadInput" type="file" accept="image/*">
+        </label>
+
+        <label for="backgroundImageInput">
+          รูปพื้นหลัง
+          <input id="backgroundImageInput" type="text" placeholder="เช่น p9/bio-background.webp หรือ /uploads/bg.webp">
+        </label>
+
+        <label for="backgroundUploadInput">
+          อัปโหลดรูปพื้นหลัง
+          <input id="backgroundUploadInput" type="file" accept="image/*">
+        </label>
+
+        <label for="visitSiteLabelInput">
+          ชื่อปุ่มเข้าชมเว็บ
+          <input id="visitSiteLabelInput" type="text">
+        </label>
+
+        <label for="visitSiteUrlInput">
+          ลิงก์ปุ่มเข้าชมเว็บ
+          <input id="visitSiteUrlInput" type="url" placeholder="https://...">
+        </label>
+
+        <label for="registerLabelInput">
+          ชื่อปุ่มสมัคร
+          <input id="registerLabelInput" type="text">
+        </label>
+
+        <label for="registerUrlInput">
+          ลิงก์ปุ่มสมัคร
+          <input id="registerUrlInput" type="url" placeholder="https://...">
+        </label>
+
+        <label for="contactLabelInput">
+          ชื่อปุ่มติดต่อแอดมิน
+          <input id="contactLabelInput" type="text">
+        </label>
+
+        <label for="contactUrlInput">
+          ลิงก์ปุ่มติดต่อแอดมิน
+          <input id="contactUrlInput" type="url" placeholder="https://...">
+        </label>
+
+        <label for="promoButtonLabelInput">
+          ชื่อปุ่มโปรโมชั่น
+          <input id="promoButtonLabelInput" type="text">
+        </label>
+      </div>
+
+      <div class="editor-block">
+        <div class="editor-block-title">
+          <strong>ปุ่มเพิ่มเติม</strong>
+          <button class="ghost-btn" id="addCustomButtonBtn" type="button">เพิ่มปุ่ม</button>
+        </div>
+        <div class="editable-list" id="customButtonRows"></div>
+      </div>
+
+      <div class="editor-block">
+        <div class="editor-block-title">
+          <strong>รูปโปรโมชั่น</strong>
+          <button class="ghost-btn" id="addPromoUrlBtn" type="button">เพิ่มช่องรูป</button>
+        </div>
+
+        <label for="promoUploadInput">
+          อัปโหลดรูปโปรโมชั่น
+          <input id="promoUploadInput" type="file" accept="image/*" multiple>
+        </label>
+
+        <div class="editable-list" id="promoImageRows"></div>
+      </div>
+
+      <div class="editor-actions">
+        <button class="primary-btn" type="submit">บันทึกหน้า Bio</button>
+        <span class="bio-editor-status" id="bioEditorStatus"></span>
+      </div>
+    </form>
   </section>
 
   <section class="panel" aria-labelledby="linkBuilderTitle">
@@ -699,6 +917,28 @@ const createdLinkBox = document.getElementById("createdLinkBox");
 const createdLinkUrl = document.getElementById("createdLinkUrl");
 const copyCreatedLinkBtn = document.getElementById("copyCreatedLinkBtn");
 const copyStatus = document.getElementById("copyStatus");
+const bioConfigForm = document.getElementById("bioConfigForm");
+const bioTitleInput = document.getElementById("bioTitleInput");
+const bioSubtitleInput = document.getElementById("bioSubtitleInput");
+const bioFooterInput = document.getElementById("bioFooterInput");
+const profileImageInput = document.getElementById("profileImageInput");
+const profileUploadInput = document.getElementById("profileUploadInput");
+const backgroundImageInput = document.getElementById("backgroundImageInput");
+const backgroundUploadInput = document.getElementById("backgroundUploadInput");
+const visitSiteLabelInput = document.getElementById("visitSiteLabelInput");
+const visitSiteUrlInput = document.getElementById("visitSiteUrlInput");
+const registerLabelInput = document.getElementById("registerLabelInput");
+const registerUrlInput = document.getElementById("registerUrlInput");
+const contactLabelInput = document.getElementById("contactLabelInput");
+const contactUrlInput = document.getElementById("contactUrlInput");
+const promoButtonLabelInput = document.getElementById("promoButtonLabelInput");
+const customButtonRows = document.getElementById("customButtonRows");
+const promoImageRows = document.getElementById("promoImageRows");
+const promoUploadInput = document.getElementById("promoUploadInput");
+const addCustomButtonBtn = document.getElementById("addCustomButtonBtn");
+const addPromoUrlBtn = document.getElementById("addPromoUrlBtn");
+const bioEditorStatus = document.getElementById("bioEditorStatus");
+let currentBioConfig = null;
 
 function createEmptyStats() {
   return {
@@ -773,7 +1013,7 @@ function getMonthLabel() {
 }
 
 function getButtonRows(stats) {
-  return Object.entries(trackedButtonDefaults).map(function ([id, label]) {
+  const knownRows = Object.entries(trackedButtonDefaults).map(function ([id, label]) {
     const saved = (stats.buttons && stats.buttons[id]) || {};
     return {
       id: id,
@@ -781,7 +1021,19 @@ function getButtonRows(stats) {
       count: Number(saved.count) || 0,
       lastClickedAt: saved.lastClickedAt || null
     };
-  }).sort(function (a, b) {
+  });
+  const customRows = Object.entries(stats.buttons || {}).filter(function ([id]) {
+    return !trackedButtonDefaults[id];
+  }).map(function ([id, saved]) {
+    return {
+      id: id,
+      label: saved.label || id,
+      count: Number(saved.count) || 0,
+      lastClickedAt: saved.lastClickedAt || null
+    };
+  });
+
+  return knownRows.concat(customRows).sort(function (a, b) {
     return b.count - a.count;
   });
 }
@@ -1037,6 +1289,219 @@ function renderLinkChart(stats) {
   }).join("");
 }
 
+function createDefaultBioConfig() {
+  return {
+    title: "P9",
+    subtitle: "บ้านป๊อกเด้งออนไลน์",
+    profileImage: "p9/brand-profile.webp",
+    backgroundImage: "p9/bio-background.webp",
+    footer: "© P9 BIO",
+    buttons: [
+      { id: "visit-site", label: "เข้าชมหน้าเว็บ", href: "https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service", trackId: "visit-site", action: "link", enabled: true, targetBlank: true },
+      { id: "register", label: "สมัครสมาชิก", href: "https://ag.p9deng.com/?code=AG0239EW&utm_source=bio&utm_medium=button&utm_campaign=p9_service", trackId: "register", action: "link", enabled: true, targetBlank: true },
+      { id: "promotion", label: "โปรโมชั่น", href: "#", trackId: "promotion", action: "promo", enabled: true, targetBlank: false },
+      { id: "contact-admin", label: "ติดต่อแอดมิน", href: "https://lin.ee/tQqumsi?utm_source=bio&utm_medium=button&utm_campaign=p9_service", trackId: "contact-admin", action: "link", enabled: true, targetBlank: true }
+    ],
+    promoImages: [
+      { id: "promo-new-member", src: "promo/promo-new-member.webp", caption: "สมาชิกใหม่", alt: "โปรโมชั่นสมาชิกใหม่", enabled: true },
+      { id: "promo-daily-10", src: "promo/promo-daily-10.webp", caption: "รับ 10% ทุกวัน", alt: "โปรโมชั่นรับ 10 เปอร์เซ็นต์ทุกวัน", enabled: true },
+      { id: "promo-cashback-2", src: "promo/promo-cashback-2.webp", caption: "คืนยอด 2%", alt: "โปรโมชั่นคืนยอด 2 เปอร์เซ็นต์", enabled: true },
+      { id: "promo-special-event", src: "promo/promo-special-event.webp", caption: "กิจกรรมพิเศษ", alt: "โปรโมชั่นกิจกรรมพิเศษ", enabled: true },
+      { id: "promo-pokdeng-online", src: "promo/promo-pokdeng-online.webp", caption: "ป๊อกเด้งออนไลน์", alt: "โปรโมชั่นป๊อกเด้งออนไลน์", enabled: true },
+      { id: "promo-5", src: "promo/promo-5.webp", caption: "โปรโมชั่น 5", alt: "โปรโมชั่น 5", enabled: true }
+    ]
+  };
+}
+
+function getConfigButton(config, id) {
+  return (config.buttons || []).find(function (button) {
+    return button.id === id;
+  }) || {};
+}
+
+function renderCustomButtonRows(buttons) {
+  const customButtons = (buttons || []).filter(function (button) {
+    return !["visit-site", "register", "promotion", "contact-admin"].includes(button.id);
+  });
+
+  customButtonRows.innerHTML = customButtons.length
+    ? customButtons.map(function (button) {
+        return `
+          <div class="editable-row" data-button-row>
+            <label>
+              ชื่อปุ่ม
+              <input data-button-label type="text" value="${escapeHtml(button.label || "")}" required>
+            </label>
+            <label>
+              ลิงก์
+              <input data-button-href type="url" value="${escapeHtml(button.href || "")}" placeholder="https://..." required>
+            </label>
+            <label class="inline-check">
+              <input data-button-enabled type="checkbox" ${button.enabled !== false ? "checked" : ""}>
+              แสดง
+            </label>
+            <button class="danger-btn" type="button" data-remove-row>ลบ</button>
+            <input data-button-id type="hidden" value="${escapeHtml(button.id || "")}">
+          </div>
+        `;
+      }).join("")
+    : '<p class="empty-state">ยังไม่มีปุ่มเพิ่มเติม</p>';
+}
+
+function renderPromoImageRows(images) {
+  promoImageRows.innerHTML = (images || []).length
+    ? images.map(function (image) {
+        return `
+          <div class="editable-row promo-row" data-promo-row>
+            <div class="thumb"><img src="${escapeHtml(image.src || "")}" alt=""></div>
+            <label>
+              ชื่อโปรโมชั่น
+              <input data-promo-caption type="text" value="${escapeHtml(image.caption || "")}" required>
+            </label>
+            <label>
+              รูปภาพ
+              <input data-promo-src type="text" value="${escapeHtml(image.src || "")}" placeholder="promo/image.webp หรือ /uploads/image.webp" required>
+            </label>
+            <label class="inline-check">
+              <input data-promo-enabled type="checkbox" ${image.enabled !== false ? "checked" : ""}>
+              แสดง
+            </label>
+            <button class="danger-btn" type="button" data-remove-row>ลบ</button>
+            <input data-promo-id type="hidden" value="${escapeHtml(image.id || "")}">
+          </div>
+        `;
+      }).join("")
+    : '<p class="empty-state">ยังไม่มีรูปโปรโมชั่น</p>';
+}
+
+function renderBioEditor(config) {
+  const normalized = {
+    ...createDefaultBioConfig(),
+    ...(config || {}),
+    buttons: Array.isArray(config && config.buttons) ? config.buttons : createDefaultBioConfig().buttons,
+    promoImages: Array.isArray(config && config.promoImages) ? config.promoImages : createDefaultBioConfig().promoImages
+  };
+  const visitSite = getConfigButton(normalized, "visit-site");
+  const register = getConfigButton(normalized, "register");
+  const promotion = getConfigButton(normalized, "promotion");
+  const contact = getConfigButton(normalized, "contact-admin");
+
+  currentBioConfig = normalized;
+  bioTitleInput.value = normalized.title || "P9";
+  bioSubtitleInput.value = normalized.subtitle || "";
+  bioFooterInput.value = normalized.footer || "";
+  profileImageInput.value = normalized.profileImage || "";
+  backgroundImageInput.value = normalized.backgroundImage || "";
+  visitSiteLabelInput.value = visitSite.label || "เข้าชมหน้าเว็บ";
+  visitSiteUrlInput.value = visitSite.href || "";
+  registerLabelInput.value = register.label || "สมัครสมาชิก";
+  registerUrlInput.value = register.href || "";
+  contactLabelInput.value = contact.label || "ติดต่อแอดมิน";
+  contactUrlInput.value = contact.href || "";
+  promoButtonLabelInput.value = promotion.label || "โปรโมชั่น";
+  document.getElementById("bioConfigUpdated").textContent = normalized.updatedAt ? formatDate(normalized.updatedAt) : "ยังไม่มีการแก้ไข";
+  renderCustomButtonRows(normalized.buttons);
+  renderPromoImageRows(normalized.promoImages);
+}
+
+function slugFromText(value, fallback) {
+  const slug = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return slug || fallback;
+}
+
+function collectBioConfig() {
+  const customButtons = Array.from(document.querySelectorAll("[data-button-row]")).map(function (row, index) {
+    const label = row.querySelector("[data-button-label]").value.trim();
+    const id = slugFromText(row.querySelector("[data-button-id]").value || label, `custom-${index + 1}`);
+    return {
+      id,
+      label,
+      href: row.querySelector("[data-button-href]").value.trim(),
+      trackId: id,
+      action: "link",
+      enabled: row.querySelector("[data-button-enabled]").checked,
+      targetBlank: true
+    };
+  }).filter(function (button) {
+    return button.label && button.href;
+  });
+
+  const promoImages = Array.from(document.querySelectorAll("[data-promo-row]")).map(function (row, index) {
+    const caption = row.querySelector("[data-promo-caption]").value.trim();
+    const id = slugFromText(row.querySelector("[data-promo-id]").value || caption, `promo-${index + 1}`);
+    const src = row.querySelector("[data-promo-src]").value.trim();
+    return {
+      id,
+      src,
+      caption,
+      alt: caption,
+      enabled: row.querySelector("[data-promo-enabled]").checked
+    };
+  }).filter(function (image) {
+    return image.src;
+  });
+
+  return {
+    ...(currentBioConfig || createDefaultBioConfig()),
+    title: bioTitleInput.value.trim() || "P9",
+    subtitle: bioSubtitleInput.value.trim(),
+    footer: bioFooterInput.value.trim(),
+    profileImage: profileImageInput.value.trim() || "p9/brand-profile.webp",
+    backgroundImage: backgroundImageInput.value.trim() || "p9/bio-background.webp",
+    buttons: [
+      { id: "visit-site", label: visitSiteLabelInput.value.trim() || "เข้าชมหน้าเว็บ", href: visitSiteUrlInput.value.trim(), trackId: "visit-site", action: "link", enabled: true, targetBlank: true },
+      { id: "register", label: registerLabelInput.value.trim() || "สมัครสมาชิก", href: registerUrlInput.value.trim(), trackId: "register", action: "link", enabled: true, targetBlank: true },
+      { id: "promotion", label: promoButtonLabelInput.value.trim() || "โปรโมชั่น", href: "#", trackId: "promotion", action: "promo", enabled: true, targetBlank: false },
+      { id: "contact-admin", label: contactLabelInput.value.trim() || "ติดต่อแอดมิน", href: contactUrlInput.value.trim(), trackId: "contact-admin", action: "link", enabled: true, targetBlank: true },
+      ...customButtons
+    ],
+    promoImages
+  };
+}
+
+async function loadBioConfig() {
+  return apiRequest("/api/bio-config");
+}
+
+async function saveBioConfig(config) {
+  return apiRequest("/api/bio-config", {
+    method: "POST",
+    body: JSON.stringify(config)
+  });
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      resolve(reader.result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImageFile(file) {
+  return apiRequest("/api/uploads", {
+    method: "POST",
+    body: JSON.stringify({
+      name: file.name,
+      type: file.type,
+      data: await readFileAsDataUrl(file)
+    })
+  });
+}
+
+function showBioEditorStatus(message, isError) {
+  bioEditorStatus.textContent = message;
+  bioEditorStatus.style.color = isError ? "var(--danger)" : "var(--ok)";
+}
+
 async function apiRequest(url, options) {
   if (window.location.protocol === "file:") {
     throw new Error("file_mode");
@@ -1121,7 +1586,9 @@ async function renderDashboard() {
   document.getElementById("tableStatus").textContent = "กำลังโหลด";
 
   try {
-    renderStats(await loadClickStats());
+    const [stats, bioConfig] = await Promise.all([loadClickStats(), loadBioConfig()]);
+    renderStats(stats);
+    renderBioEditor(bioConfig);
   } catch (error) {
     if (error.message === "unauthorized") {
       showLogin("กรุณาเข้าสู่ระบบอีกครั้ง");
@@ -1178,6 +1645,186 @@ loginForm.addEventListener("submit", async function (event) {
     loginError.textContent = error.message === "file_mode"
       ? "กรุณาเปิดผ่าน server เช่น http://localhost:8787/dashboard.html"
       : "ยูซเซอร์หรือรหัสผ่านไม่ถูกต้อง";
+  }
+});
+
+addCustomButtonBtn.addEventListener("click", function () {
+  if (customButtonRows.querySelector(".empty-state")) {
+    customButtonRows.innerHTML = "";
+  }
+
+  const id = `custom-${Date.now()}`;
+  customButtonRows.insertAdjacentHTML("beforeend", `
+    <div class="editable-row" data-button-row>
+      <label>
+        ชื่อปุ่ม
+        <input data-button-label type="text" value="ปุ่มใหม่" required>
+      </label>
+      <label>
+        ลิงก์
+        <input data-button-href type="url" value="" placeholder="https://..." required>
+      </label>
+      <label class="inline-check">
+        <input data-button-enabled type="checkbox" checked>
+        แสดง
+      </label>
+      <button class="danger-btn" type="button" data-remove-row>ลบ</button>
+      <input data-button-id type="hidden" value="${id}">
+    </div>
+  `);
+});
+
+addPromoUrlBtn.addEventListener("click", function () {
+  if (promoImageRows.querySelector(".empty-state")) {
+    promoImageRows.innerHTML = "";
+  }
+
+  const id = `promo-${Date.now()}`;
+  promoImageRows.insertAdjacentHTML("beforeend", `
+    <div class="editable-row promo-row" data-promo-row>
+      <div class="thumb"><img src="" alt=""></div>
+      <label>
+        ชื่อโปรโมชั่น
+        <input data-promo-caption type="text" value="โปรโมชั่นใหม่" required>
+      </label>
+      <label>
+        รูปภาพ
+        <input data-promo-src type="text" value="" placeholder="promo/image.webp หรือ /uploads/image.webp" required>
+      </label>
+      <label class="inline-check">
+        <input data-promo-enabled type="checkbox" checked>
+        แสดง
+      </label>
+      <button class="danger-btn" type="button" data-remove-row>ลบ</button>
+      <input data-promo-id type="hidden" value="${id}">
+    </div>
+  `);
+});
+
+customButtonRows.addEventListener("click", function (event) {
+  if (!event.target.matches("[data-remove-row]")) {
+    return;
+  }
+  event.target.closest("[data-button-row]").remove();
+  if (!customButtonRows.querySelector("[data-button-row]")) {
+    customButtonRows.innerHTML = '<p class="empty-state">ยังไม่มีปุ่มเพิ่มเติม</p>';
+  }
+});
+
+promoImageRows.addEventListener("click", function (event) {
+  if (!event.target.matches("[data-remove-row]")) {
+    return;
+  }
+  event.target.closest("[data-promo-row]").remove();
+  if (!promoImageRows.querySelector("[data-promo-row]")) {
+    promoImageRows.innerHTML = '<p class="empty-state">ยังไม่มีรูปโปรโมชั่น</p>';
+  }
+});
+
+promoImageRows.addEventListener("input", function (event) {
+  if (!event.target.matches("[data-promo-src]")) {
+    return;
+  }
+  const row = event.target.closest("[data-promo-row]");
+  const image = row.querySelector(".thumb img");
+  image.src = event.target.value.trim();
+});
+
+profileUploadInput.addEventListener("change", async function () {
+  const file = profileUploadInput.files && profileUploadInput.files[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    showBioEditorStatus("กำลังอัปโหลดรูปโปรไฟล์");
+    const result = await uploadImageFile(file);
+    profileImageInput.value = result.url;
+    showBioEditorStatus("อัปโหลดรูปโปรไฟล์แล้ว กดบันทึกหน้า Bio");
+  } catch (error) {
+    showBioEditorStatus("อัปโหลดรูปโปรไฟล์ไม่สำเร็จ", true);
+  } finally {
+    profileUploadInput.value = "";
+  }
+});
+
+backgroundUploadInput.addEventListener("change", async function () {
+  const file = backgroundUploadInput.files && backgroundUploadInput.files[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    showBioEditorStatus("กำลังอัปโหลดรูปพื้นหลัง");
+    const result = await uploadImageFile(file);
+    backgroundImageInput.value = result.url;
+    showBioEditorStatus("อัปโหลดรูปพื้นหลังแล้ว กดบันทึกหน้า Bio");
+  } catch (error) {
+    showBioEditorStatus("อัปโหลดรูปพื้นหลังไม่สำเร็จ", true);
+  } finally {
+    backgroundUploadInput.value = "";
+  }
+});
+
+promoUploadInput.addEventListener("change", async function () {
+  const files = Array.from(promoUploadInput.files || []);
+  if (!files.length) {
+    return;
+  }
+
+  try {
+    showBioEditorStatus("กำลังอัปโหลดรูปโปรโมชั่น");
+    if (promoImageRows.querySelector(".empty-state")) {
+      promoImageRows.innerHTML = "";
+    }
+
+    for (const file of files) {
+      const result = await uploadImageFile(file);
+      const caption = file.name.replace(/\.[^.]+$/, "");
+      const id = slugFromText(caption, `promo-${Date.now()}`);
+      promoImageRows.insertAdjacentHTML("beforeend", `
+        <div class="editable-row promo-row" data-promo-row>
+          <div class="thumb"><img src="${escapeHtml(result.url)}" alt=""></div>
+          <label>
+            ชื่อโปรโมชั่น
+            <input data-promo-caption type="text" value="${escapeHtml(caption)}" required>
+          </label>
+          <label>
+            รูปภาพ
+            <input data-promo-src type="text" value="${escapeHtml(result.url)}" required>
+          </label>
+          <label class="inline-check">
+            <input data-promo-enabled type="checkbox" checked>
+            แสดง
+          </label>
+          <button class="danger-btn" type="button" data-remove-row>ลบ</button>
+          <input data-promo-id type="hidden" value="${escapeHtml(id)}">
+        </div>
+      `);
+    }
+
+    showBioEditorStatus("อัปโหลดรูปโปรโมชั่นแล้ว กดบันทึกหน้า Bio");
+  } catch (error) {
+    showBioEditorStatus("อัปโหลดรูปโปรโมชั่นไม่สำเร็จ", true);
+  } finally {
+    promoUploadInput.value = "";
+  }
+});
+
+bioConfigForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  showBioEditorStatus("กำลังบันทึกหน้า Bio");
+
+  try {
+    const result = await saveBioConfig(collectBioConfig());
+    renderBioEditor(result.config);
+    showBioEditorStatus("บันทึกหน้า Bio แล้ว");
+  } catch (error) {
+    if (error.message === "unauthorized") {
+      showLogin("กรุณาเข้าสู่ระบบอีกครั้ง");
+      return;
+    }
+    showBioEditorStatus("บันทึกหน้า Bio ไม่สำเร็จ", true);
   }
 });
 

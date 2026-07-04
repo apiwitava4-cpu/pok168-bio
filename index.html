@@ -22,6 +22,7 @@
   --gold-soft: #fff1a7;
   --gold-deep: #9c6408;
   --line: rgba(255, 219, 95, .5);
+  --bio-background-image: url("p9/bio-background.webp");
   font-family: Arial, "Tahoma", sans-serif;
 }
 
@@ -33,7 +34,7 @@ body {
   align-items: center;
   justify-content: center;
   color: var(--text);
-  background: var(--bg) url("p9/bio-background.webp") center / cover fixed no-repeat;
+  background: var(--bg) var(--bio-background-image) center / cover fixed no-repeat;
   isolation: isolate;
   overflow-x: hidden;
 }
@@ -193,7 +194,7 @@ footer {
   padding: 22px;
   background:
     linear-gradient(180deg, rgba(21, 17, 10, .96), rgba(6, 5, 3, .98)),
-    url("p9/bio-background.webp") center / cover no-repeat;
+    var(--bio-background-image) center / cover no-repeat;
   border: 1px solid var(--gold);
   border-radius: 22px;
   box-shadow: 0 20px 65px rgba(0, 0, 0, .62), 0 0 42px rgba(242, 185, 20, .24);
@@ -297,12 +298,13 @@ footer {
 <body>
 <main class="card">
   <div class="profile" aria-label="P9">
-    <img src="p9/brand-profile.webp" alt="P9">
+    <img id="bioProfileImage" src="p9/brand-profile.webp" alt="P9">
   </div>
 
-  <h1>P9</h1>
-  <p>บ้านป๊อกเด้งออนไลน์</p>
+  <h1 id="bioTitle">P9</h1>
+  <p id="bioSubtitle">บ้านป๊อกเด้งออนไลน์</p>
 
+  <div id="bioButtons">
   <a
     class="btn"
     href="https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service"
@@ -337,7 +339,9 @@ footer {
     ติดต่อแอดมิน
   </a>
 
-  <footer>&copy; P9 BIO</footer>
+  </div>
+
+  <footer id="bioFooter">&copy; P9 BIO</footer>
 </main>
 
 <div class="modal" id="promoModal" aria-hidden="true">
@@ -345,7 +349,7 @@ footer {
     <button class="close" type="button" aria-label="ปิดหน้าต่าง">&times;</button>
     <h2 id="promoTitle">โปรโมชั่นล่าสุด</h2>
 
-    <div class="gallery">
+    <div class="gallery" id="promoGallery">
       <figure class="promo-card">
         <img src="promo/promo-new-member.webp" alt="โปรโมชั่นสมาชิกใหม่">
         <figcaption>สมาชิกใหม่</figcaption>
@@ -388,6 +392,60 @@ const trackedButtonDefaults = {
   "contact-admin": "ติดต่อแอดมิน"
 };
 
+const defaultBioConfig = {
+  title: "P9",
+  subtitle: "บ้านป๊อกเด้งออนไลน์",
+  profileImage: "p9/brand-profile.webp",
+  backgroundImage: "p9/bio-background.webp",
+  footer: "© P9 BIO",
+  buttons: [
+    {
+      id: "visit-site",
+      label: "เข้าชมหน้าเว็บ",
+      href: "https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      trackId: "visit-site",
+      action: "link",
+      enabled: true,
+      targetBlank: true
+    },
+    {
+      id: "register",
+      label: "สมัครสมาชิก",
+      href: "https://ag.p9deng.com/?code=AG0239EW&utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      trackId: "register",
+      action: "link",
+      enabled: true,
+      targetBlank: true
+    },
+    {
+      id: "promotion",
+      label: "โปรโมชั่น",
+      href: "#",
+      trackId: "promotion",
+      action: "promo",
+      enabled: true,
+      targetBlank: false
+    },
+    {
+      id: "contact-admin",
+      label: "ติดต่อแอดมิน",
+      href: "https://lin.ee/tQqumsi?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      trackId: "contact-admin",
+      action: "link",
+      enabled: true,
+      targetBlank: true
+    }
+  ],
+  promoImages: [
+    { id: "promo-new-member", src: "promo/promo-new-member.webp", caption: "สมาชิกใหม่", alt: "โปรโมชั่นสมาชิกใหม่", enabled: true },
+    { id: "promo-daily-10", src: "promo/promo-daily-10.webp", caption: "รับ 10% ทุกวัน", alt: "โปรโมชั่นรับ 10 เปอร์เซ็นต์ทุกวัน", enabled: true },
+    { id: "promo-cashback-2", src: "promo/promo-cashback-2.webp", caption: "คืนยอด 2%", alt: "โปรโมชั่นคืนยอด 2 เปอร์เซ็นต์", enabled: true },
+    { id: "promo-special-event", src: "promo/promo-special-event.webp", caption: "กิจกรรมพิเศษ", alt: "โปรโมชั่นกิจกรรมพิเศษ", enabled: true },
+    { id: "promo-pokdeng-online", src: "promo/promo-pokdeng-online.webp", caption: "ป๊อกเด้งออนไลน์", alt: "โปรโมชั่นป๊อกเด้งออนไลน์", enabled: true },
+    { id: "promo-5", src: "promo/promo-5.webp", caption: "โปรโมชั่น 5", alt: "โปรโมชั่น 5", enabled: true }
+  ]
+};
+
 function cleanSourceId(value) {
   return String(value || "")
     .trim()
@@ -414,6 +472,89 @@ function getCurrentBioSource() {
 }
 
 const currentBioSource = getCurrentBioSource();
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function safeCssUrl(value) {
+  return String(value || "p9/bio-background.webp").replace(/["\\\n\r]/g, "");
+}
+
+function mergeBioConfig(config) {
+  const input = config && typeof config === "object" ? config : {};
+  return {
+    ...defaultBioConfig,
+    ...input,
+    buttons: Array.isArray(input.buttons) ? input.buttons : defaultBioConfig.buttons,
+    promoImages: Array.isArray(input.promoImages) ? input.promoImages : defaultBioConfig.promoImages
+  };
+}
+
+function renderBioConfig(config) {
+  const normalized = mergeBioConfig(config);
+  const profileImage = document.getElementById("bioProfileImage");
+  const buttons = document.getElementById("bioButtons");
+  const gallery = document.getElementById("promoGallery");
+
+  document.getElementById("bioTitle").textContent = normalized.title || "P9";
+  document.getElementById("bioSubtitle").textContent = normalized.subtitle || "";
+  document.getElementById("bioFooter").textContent = normalized.footer || "© P9 BIO";
+  document.documentElement.style.setProperty("--bio-background-image", `url("${safeCssUrl(normalized.backgroundImage)}")`);
+  profileImage.src = normalized.profileImage || "p9/brand-profile.webp";
+  profileImage.alt = normalized.title || "P9";
+
+  buttons.innerHTML = normalized.buttons
+    .filter(function (button) {
+      return button && button.enabled !== false && button.label;
+    })
+    .map(function (button) {
+      const action = button.action === "promo" ? "promo" : "link";
+      const id = cleanSourceId(button.id || button.trackId || button.label) || "button";
+      const trackId = cleanSourceId(button.trackId || id) || id;
+      const href = action === "promo" ? "#" : (button.href || "#");
+      const target = action === "promo" || button.targetBlank === false ? "" : ' target="_blank" rel="noopener noreferrer"';
+      const promoAttrs = action === "promo" ? ' id="promoBtn" role="button" aria-controls="promoModal" aria-expanded="false" data-promo-button="true"' : "";
+
+      return `<a class="btn" href="${escapeHtml(href)}" data-track-id="${escapeHtml(trackId)}" data-track-label="${escapeHtml(button.label)}"${promoAttrs}${target}>${escapeHtml(button.label)}</a>`;
+    }).join("");
+
+  gallery.innerHTML = normalized.promoImages
+    .filter(function (image) {
+      return image && image.enabled !== false && image.src;
+    })
+    .map(function (image) {
+      const caption = image.caption || "โปรโมชั่น";
+      return `
+        <figure class="promo-card">
+          <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt || caption)}">
+          <figcaption>${escapeHtml(caption)}</figcaption>
+        </figure>
+      `;
+    }).join("") || '<p class="empty-state">ยังไม่มีรูปโปรโมชั่น</p>';
+}
+
+async function loadBioConfig() {
+  if (window.location.protocol === "file:") {
+    renderBioConfig(defaultBioConfig);
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/bio-config", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("config_failed");
+    }
+    renderBioConfig(await response.json());
+  } catch (error) {
+    renderBioConfig(defaultBioConfig);
+  }
+}
 
 function createClickStats() {
   return {
@@ -529,33 +670,42 @@ function recordClick(button) {
   sendClickToBackend(clickEvent);
 }
 
-document.querySelectorAll("[data-track-id]").forEach(function (button) {
-  button.addEventListener("click", function () {
-    recordClick(button);
-  });
-});
-
 const modal = document.getElementById("promoModal");
-const promoBtn = document.getElementById("promoBtn");
+const bioButtons = document.getElementById("bioButtons");
 const closeBtn = document.querySelector(".close");
 
 function openModal() {
+  const promoBtn = document.querySelector("[data-promo-button]");
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden", "false");
-  promoBtn.setAttribute("aria-expanded", "true");
+  if (promoBtn) {
+    promoBtn.setAttribute("aria-expanded", "true");
+  }
   closeBtn.focus();
 }
 
 function closeModal() {
+  const promoBtn = document.querySelector("[data-promo-button]");
   modal.classList.remove("is-open");
   modal.setAttribute("aria-hidden", "true");
-  promoBtn.setAttribute("aria-expanded", "false");
-  promoBtn.focus();
+  if (promoBtn) {
+    promoBtn.setAttribute("aria-expanded", "false");
+    promoBtn.focus();
+  }
 }
 
-promoBtn.addEventListener("click", function (event) {
-  event.preventDefault();
-  openModal();
+bioButtons.addEventListener("click", function (event) {
+  const button = event.target.closest("[data-track-id]");
+  if (!button) {
+    return;
+  }
+
+  recordClick(button);
+
+  if (button.dataset.promoButton === "true") {
+    event.preventDefault();
+    openModal();
+  }
 });
 
 closeBtn.addEventListener("click", closeModal);
@@ -571,6 +721,8 @@ document.addEventListener("keydown", function (event) {
     closeModal();
   }
 });
+
+loadBioConfig();
 </script>
 </body>
 </html>

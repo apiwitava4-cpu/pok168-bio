@@ -7,10 +7,13 @@ const path = require("path");
 const rootDir = __dirname;
 const dataDir = path.resolve(process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(rootDir, "data"));
 const statsFile = path.join(dataDir, "click-stats.json");
+const bioConfigFile = path.join(dataDir, "bio-config.json");
+const uploadDir = path.join(dataDir, "uploads");
 const port = Number(process.env.PORT || 8787);
 const dashboardUser = process.env.DASHBOARD_USER || "admin";
 const dashboardPassword = process.env.DASHBOARD_PASSWORD || "p9bio2026";
 const sessions = new Map();
+const maxBodyBytes = 12 * 1024 * 1024;
 
 const trackedButtonDefaults = {
   "visit-site": "เข้าชมหน้าเว็บ",
@@ -35,6 +38,7 @@ const mimeTypes = {
 };
 
 let writeQueue = Promise.resolve();
+let configWriteQueue = Promise.resolve();
 
 function createClickStats() {
   return {
@@ -69,6 +73,64 @@ function createBioLinkRecord(id, name, createdAt) {
     dailyClicks: {},
     createdAt: createdAt || new Date().toISOString(),
     lastClickedAt: null
+  };
+}
+
+function createDefaultBioConfig() {
+  return {
+    version: 1,
+    updatedAt: null,
+    title: "P9",
+    subtitle: "บ้านป๊อกเด้งออนไลน์",
+    profileImage: "p9/brand-profile.webp",
+    backgroundImage: "p9/bio-background.webp",
+    footer: "© P9 BIO",
+    buttons: [
+      {
+        id: "visit-site",
+        label: "เข้าชมหน้าเว็บ",
+        href: "https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+        trackId: "visit-site",
+        action: "link",
+        enabled: true,
+        targetBlank: true
+      },
+      {
+        id: "register",
+        label: "สมัครสมาชิก",
+        href: "https://ag.p9deng.com/?code=AG0239EW&utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+        trackId: "register",
+        action: "link",
+        enabled: true,
+        targetBlank: true
+      },
+      {
+        id: "promotion",
+        label: "โปรโมชั่น",
+        href: "#",
+        trackId: "promotion",
+        action: "promo",
+        enabled: true,
+        targetBlank: false
+      },
+      {
+        id: "contact-admin",
+        label: "ติดต่อแอดมิน",
+        href: "https://lin.ee/tQqumsi?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+        trackId: "contact-admin",
+        action: "link",
+        enabled: true,
+        targetBlank: true
+      }
+    ],
+    promoImages: [
+      { id: "promo-new-member", src: "promo/promo-new-member.webp", caption: "สมาชิกใหม่", alt: "โปรโมชั่นสมาชิกใหม่", enabled: true },
+      { id: "promo-daily-10", src: "promo/promo-daily-10.webp", caption: "รับ 10% ทุกวัน", alt: "โปรโมชั่นรับ 10 เปอร์เซ็นต์ทุกวัน", enabled: true },
+      { id: "promo-cashback-2", src: "promo/promo-cashback-2.webp", caption: "คืนยอด 2%", alt: "โปรโมชั่นคืนยอด 2 เปอร์เซ็นต์", enabled: true },
+      { id: "promo-special-event", src: "promo/promo-special-event.webp", caption: "กิจกรรมพิเศษ", alt: "โปรโมชั่นกิจกรรมพิเศษ", enabled: true },
+      { id: "promo-pokdeng-online", src: "promo/promo-pokdeng-online.webp", caption: "ป๊อกเด้งออนไลน์", alt: "โปรโมชั่นป๊อกเด้งออนไลน์", enabled: true },
+      { id: "promo-5", src: "promo/promo-5.webp", caption: "โปรโมชั่น 5", alt: "โปรโมชั่น 5", enabled: true }
+    ]
   };
 }
 
@@ -255,7 +317,7 @@ function readBody(req) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 1024 * 1024) {
+      if (body.length > maxBodyBytes) {
         reject(new Error("Body too large"));
         req.destroy();
       }
@@ -278,6 +340,163 @@ function cleanText(value, fallback = "") {
   return String(value || fallback).trim().slice(0, 300);
 }
 
+function cleanUrl(value, fallback = "") {
+  const text = String(value || fallback).trim().replace(/[\r\n]/g, "").slice(0, 1200);
+  return /^javascript:/i.test(text) ? fallback : text;
+}
+
+function normalizeBioButton(value, index) {
+  const button = value && typeof value === "object" ? value : {};
+  const label = cleanText(button.label, `ปุ่ม ${index + 1}`);
+  const id = cleanSlug(button.id || button.trackId || label) || `button-${index + 1}`;
+  const action = button.action === "promo" || id === "promotion" ? "promo" : "link";
+
+  return {
+    id,
+    label,
+    href: action === "promo" ? "#" : cleanUrl(button.href),
+    trackId: cleanSlug(button.trackId || id) || id,
+    action,
+    enabled: button.enabled !== false,
+    targetBlank: action === "promo" ? false : button.targetBlank !== false
+  };
+}
+
+function normalizePromoImage(value, index) {
+  const image = value && typeof value === "object" ? value : {};
+  const caption = cleanText(image.caption, `โปรโมชั่น ${index + 1}`);
+  const id = cleanSlug(image.id || caption) || `promo-${index + 1}`;
+
+  return {
+    id,
+    src: cleanUrl(image.src),
+    caption,
+    alt: cleanText(image.alt, caption),
+    enabled: image.enabled !== false
+  };
+}
+
+function normalizeBioConfig(config) {
+  const defaults = createDefaultBioConfig();
+  const input = config && typeof config === "object" ? config : defaults;
+  const rawButtons = Array.isArray(input.buttons) && input.buttons.length ? input.buttons : defaults.buttons;
+  const rawPromos = Array.isArray(input.promoImages) ? input.promoImages : defaults.promoImages;
+  const buttons = rawButtons.slice(0, 24).map(normalizeBioButton).filter((button) => button.label);
+  const promoImages = rawPromos.slice(0, 40).map(normalizePromoImage).filter((image) => image.src);
+
+  if (!buttons.some((button) => button.action === "promo")) {
+    buttons.splice(2, 0, normalizeBioButton(defaults.buttons[2], 2));
+  }
+
+  return {
+    version: 1,
+    updatedAt: input.updatedAt || null,
+    title: cleanText(input.title, defaults.title),
+    subtitle: cleanText(input.subtitle, defaults.subtitle),
+    profileImage: cleanUrl(input.profileImage, defaults.profileImage),
+    backgroundImage: cleanUrl(input.backgroundImage, defaults.backgroundImage),
+    footer: cleanText(input.footer, defaults.footer),
+    buttons,
+    promoImages
+  };
+}
+
+async function ensureBioConfigFile() {
+  await fsp.mkdir(dataDir, { recursive: true });
+
+  if (!fs.existsSync(bioConfigFile)) {
+    await fsp.writeFile(bioConfigFile, JSON.stringify(createDefaultBioConfig(), null, 2), "utf8");
+  }
+}
+
+async function readBioConfig() {
+  await ensureBioConfigFile();
+  try {
+    return normalizeBioConfig(JSON.parse(await fsp.readFile(bioConfigFile, "utf8")));
+  } catch (error) {
+    return createDefaultBioConfig();
+  }
+}
+
+async function writeBioConfig(config) {
+  await ensureBioConfigFile();
+  const normalized = normalizeBioConfig({
+    ...config,
+    updatedAt: new Date().toISOString()
+  });
+  await fsp.writeFile(bioConfigFile, JSON.stringify(normalized, null, 2), "utf8");
+  return normalized;
+}
+
+function getAllStatsButtons(stats) {
+  const knownButtons = Object.entries(trackedButtonDefaults).map(([id, label]) => {
+    const button = stats.buttons[id] || { id, label, count: 0, lastClickedAt: "" };
+    return { id, label: button.label || label, count: Number(button.count) || 0, lastClickedAt: button.lastClickedAt || "" };
+  });
+  const customButtons = Object.entries(stats.buttons || {})
+    .filter(([id]) => !trackedButtonDefaults[id])
+    .map(([id, button]) => ({
+      id,
+      label: button.label || id,
+      count: Number(button.count) || 0,
+      lastClickedAt: button.lastClickedAt || ""
+    }));
+
+  return knownButtons.concat(customButtons).sort((a, b) => (b.count || 0) - (a.count || 0));
+}
+
+async function handleGetBioConfig(req, res) {
+  send(res, 200, await readBioConfig());
+}
+
+async function handleUpdateBioConfig(req, res) {
+  const body = await readBody(req);
+
+  configWriteQueue = configWriteQueue.then(async () => {
+    const config = await writeBioConfig(body);
+    send(res, 200, { ok: true, config });
+  });
+
+  await configWriteQueue;
+}
+
+async function handleUploadImage(req, res) {
+  const body = await readBody(req);
+  const mimeType = cleanText(body.type || body.mimeType).toLowerCase();
+  const filename = cleanText(body.name || "upload");
+  const allowedTypes = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif"
+  };
+  const extension = allowedTypes[mimeType];
+
+  if (!extension || !body.data) {
+    send(res, 400, { ok: false, error: "invalid_image" });
+    return;
+  }
+
+  const base64 = String(body.data).includes(",") ? String(body.data).split(",").pop() : String(body.data);
+  const buffer = Buffer.from(base64, "base64");
+  if (!buffer.length || buffer.length > 8 * 1024 * 1024) {
+    send(res, 400, { ok: false, error: "invalid_image_size" });
+    return;
+  }
+
+  await fsp.mkdir(uploadDir, { recursive: true });
+  const safeBase = cleanSlug(path.parse(filename).name) || "image";
+  const savedName = `${Date.now()}-${safeBase}${extension}`;
+  const filePath = path.join(uploadDir, savedName);
+  await fsp.writeFile(filePath, buffer);
+
+  send(res, 201, {
+    ok: true,
+    url: `/uploads/${savedName}`,
+    name: savedName
+  });
+}
+
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
   return Array.isArray(forwarded) ? forwarded[0] : String(forwarded || req.socket.remoteAddress || "").split(",")[0].trim();
@@ -294,14 +513,14 @@ function getClickSource(body) {
 
 async function handleClick(req, res) {
   const body = await readBody(req);
-  const id = cleanText(body.id);
+  const id = cleanSlug(body.id);
 
-  if (!id || !trackedButtonDefaults[id]) {
+  if (!id) {
     send(res, 400, { ok: false, error: "invalid_button" });
     return;
   }
 
-  const label = cleanText(body.label, trackedButtonDefaults[id]);
+  const label = cleanText(body.label, trackedButtonDefaults[id] || id);
   const now = new Date().toISOString();
   const dayKey = getBangkokDateKey(now);
   const source = getClickSource(body);
@@ -419,8 +638,8 @@ function statsToCsv(stats) {
     ["button_id", "button_label", "clicks", "last_clicked_at"].map(csvCell).join(",")
   ];
 
-  Object.keys(trackedButtonDefaults).forEach((id) => {
-    const button = stats.buttons[id] || { id, label: trackedButtonDefaults[id], count: 0, lastClickedAt: "" };
+  getAllStatsButtons(stats).forEach((button) => {
+    const id = button.id;
     lines.push([id, button.label, button.count, button.lastClickedAt || ""].map(csvCell).join(","));
   });
 
@@ -501,12 +720,64 @@ async function handleStatic(req, res, pathname) {
   }
 }
 
+async function handleUploadedFile(req, res, pathname) {
+  const safePath = path.normalize(decodeURIComponent(pathname.replace(/^\/uploads\/?/, ""))).replace(/^[/\\]+/, "");
+  const filePath = path.resolve(uploadDir, safePath);
+
+  if (filePath !== uploadDir && !filePath.startsWith(uploadDir + path.sep)) {
+    send(res, 403, "Forbidden");
+    return;
+  }
+
+  try {
+    const stat = await fsp.stat(filePath);
+    if (!stat.isFile()) {
+      send(res, 404, "Not found");
+      return;
+    }
+
+    const extension = path.extname(filePath).toLowerCase();
+    res.writeHead(200, {
+      "Content-Type": mimeTypes[extension] || "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, immutable"
+    });
+    if (req.method === "HEAD") {
+      res.end();
+      return;
+    }
+    fs.createReadStream(filePath).pipe(res);
+  } catch (error) {
+    send(res, 404, "Not found");
+  }
+}
+
 async function handleRequest(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
     if (req.method === "GET" && url.pathname === "/api/health") {
       send(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/bio-config") {
+      await handleGetBioConfig(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/bio-config") {
+      if (!requireSession(req, res)) {
+        return;
+      }
+      await handleUpdateBioConfig(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/uploads") {
+      if (!requireSession(req, res)) {
+        return;
+      }
+      await handleUploadImage(req, res);
       return;
     }
 
@@ -571,6 +842,11 @@ async function handleRequest(req, res) {
 
     if (req.method === "GET" && url.pathname === "/admin") {
       redirect(res, "/dashboard.html");
+      return;
+    }
+
+    if ((req.method === "GET" || req.method === "HEAD") && url.pathname.startsWith("/uploads/")) {
+      await handleUploadedFile(req, res, url.pathname);
       return;
     }
 
