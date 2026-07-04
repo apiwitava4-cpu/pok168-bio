@@ -249,6 +249,70 @@ body.is-authenticated .dashboard {
   font-size: 13px;
 }
 
+.chart-panel {
+  padding: 16px;
+}
+
+.chart-wrap {
+  overflow-x: auto;
+}
+
+.link-chart-svg {
+  display: block;
+  min-width: 860px;
+  width: 100%;
+  height: 340px;
+}
+
+.chart-axis {
+  fill: rgba(248, 244, 231, .58);
+  font-size: 11px;
+}
+
+.chart-grid {
+  stroke: rgba(255, 255, 255, .1);
+  stroke-width: 1;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  stroke: #070707;
+  stroke-width: 2;
+}
+
+.chart-label {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .08);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -478,6 +542,7 @@ tbody tr:last-child td {
     <div class="actions" aria-label="เครื่องมือแดชบอร์ด">
       <a class="ghost-btn" href="index.html">กลับหน้า Bio</a>
       <a class="ghost-btn" href="#linkBuilderTitle">สร้างลิงก์ Bio</a>
+      <a class="ghost-btn" href="#linkChartTitle">กราฟลิงก์</a>
       <button class="ghost-btn" id="refreshBtn" type="button">รีเฟรช</button>
       <button class="ghost-btn" id="exportBtn" type="button">ส่งออก CSV</button>
       <button class="danger-btn" id="resetBtn" type="button">รีเซ็ตสถิติ</button>
@@ -561,6 +626,21 @@ tbody tr:last-child td {
     <p class="copy-status" id="copyStatus"></p>
   </section>
 
+  <section class="panel" aria-labelledby="linkChartTitle">
+    <div class="panel-header">
+      <div>
+        <h2 id="linkChartTitle">กราฟคลิกของแต่ละลิงก์</h2>
+        <span>แสดงยอดคลิกแยกตามลิงก์ที่สร้างไว้ ตั้งแต่วันที่ 1 ถึงวันที่ 30</span>
+      </div>
+      <span id="chartMonthLabel">วันที่ 1-30</span>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-wrap" id="linkChart"></div>
+      <div class="chart-legend" id="linkChartLegend"></div>
+    </div>
+  </section>
+
   <section class="panel" aria-labelledby="buttonStatsTitle">
     <div class="panel-header">
       <h2 id="buttonStatsTitle">สถิติแต่ละปุ่ม</h2>
@@ -598,6 +678,11 @@ const trackedButtonDefaults = {
   "promotion": "โปรโมชั่น",
   "contact-admin": "ติดต่อแอดมิน"
 };
+
+const chartDays = Array.from({ length: 30 }, function (_, index) {
+  return index + 1;
+});
+const chartColors = ["#ffd54a", "#7bdca8", "#ff9a76", "#55c7ff", "#ff6fbd", "#c6f16a", "#ffffff", "#b98918"];
 
 const loginForm = document.getElementById("loginForm");
 const usernameInput = document.getElementById("username");
@@ -663,6 +748,30 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function getCurrentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+}
+
+function getDateKeyFromValue(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function getMonthLabel() {
+  return new Intl.DateTimeFormat("th-TH", {
+    month: "long",
+    year: "numeric"
+  }).format(new Date());
+}
+
 function getButtonRows(stats) {
   return Object.entries(trackedButtonDefaults).map(function ([id, label]) {
     const saved = (stats.buttons && stats.buttons[id]) || {};
@@ -697,6 +806,7 @@ function getLinkRows(stats) {
       url: link.url || buildBioLinkUrl(link.id),
       count: Number(link.count) || 0,
       buttons: link.buttons || {},
+      dailyClicks: link.dailyClicks || {},
       createdAt: link.createdAt || null,
       lastClickedAt: link.lastClickedAt || null
     };
@@ -786,6 +896,147 @@ function renderLinkRows(stats) {
   bindCopyButtons();
 }
 
+function getDailyFallbackFromEvents(stats, monthKey) {
+  const output = {};
+  const events = Array.isArray(stats.events) ? stats.events : [];
+
+  events.forEach(function (event) {
+    const sourceId = event.sourceId || "direct";
+    const dateKey = getDateKeyFromValue(event.clickedAt);
+    if (!sourceId || sourceId === "direct" || !dateKey.startsWith(`${monthKey}-`)) {
+      return;
+    }
+
+    const day = Number(dateKey.slice(-2));
+    if (day < 1 || day > 30) {
+      return;
+    }
+
+    if (!output[sourceId]) {
+      output[sourceId] = {};
+    }
+    output[sourceId][day] = (output[sourceId][day] || 0) + 1;
+  });
+
+  return output;
+}
+
+function getLinkChartRows(stats) {
+  const monthKey = getCurrentMonthKey();
+  const fallbackDailyClicks = getDailyFallbackFromEvents(stats, monthKey);
+
+  return getLinkRows(stats)
+    .filter(function (link) {
+      return link.id !== "direct";
+    })
+    .map(function (link) {
+      const dailyClicks = link.dailyClicks && typeof link.dailyClicks === "object" ? link.dailyClicks : {};
+      const values = chartDays.map(function (day) {
+        const dateKey = `${monthKey}-${pad2(day)}`;
+        if (Object.prototype.hasOwnProperty.call(dailyClicks, dateKey)) {
+          return Number(dailyClicks[dateKey]) || 0;
+        }
+        return Number(fallbackDailyClicks[link.id] && fallbackDailyClicks[link.id][day]) || 0;
+      });
+
+      return {
+        ...link,
+        values: values,
+        monthTotal: values.reduce(function (sum, count) {
+          return sum + count;
+        }, 0)
+      };
+    })
+    .sort(function (a, b) {
+      return b.monthTotal - a.monthTotal || a.name.localeCompare(b.name);
+    });
+}
+
+function renderLinkChart(stats) {
+  const rows = getLinkChartRows(stats || createEmptyStats());
+  const chart = document.getElementById("linkChart");
+  const legend = document.getElementById("linkChartLegend");
+  document.getElementById("chartMonthLabel").textContent = `${getMonthLabel()} วันที่ 1-30`;
+
+  if (!rows.length) {
+    chart.innerHTML = '<p class="empty-state">ยังไม่มีลิงก์ที่สร้างสำหรับแสดงกราฟ</p>';
+    legend.innerHTML = "";
+    return;
+  }
+
+  const svgWidth = 980;
+  const svgHeight = 340;
+  const margin = { top: 24, right: 170, bottom: 48, left: 48 };
+  const plotWidth = svgWidth - margin.left - margin.right;
+  const plotHeight = svgHeight - margin.top - margin.bottom;
+  const maxValue = Math.max(1, ...rows.flatMap(function (row) {
+    return row.values;
+  }));
+  const xForDay = function (dayIndex) {
+    return margin.left + ((plotWidth / (chartDays.length - 1)) * dayIndex);
+  };
+  const yForCount = function (count) {
+    return margin.top + ((maxValue - count) / maxValue) * plotHeight;
+  };
+  const tickCount = 4;
+  const grid = Array.from({ length: tickCount + 1 }, function (_, index) {
+    const value = Math.round((maxValue / tickCount) * index);
+    const y = yForCount(value);
+    return `
+      <line class="chart-grid" x1="${margin.left}" y1="${y}" x2="${svgWidth - margin.right}" y2="${y}"></line>
+      <text class="chart-axis" x="${margin.left - 10}" y="${y + 4}" text-anchor="end">${formatNumber(value)}</text>
+    `;
+  }).reverse().join("");
+  const dayLabels = chartDays.map(function (day, index) {
+    const x = xForDay(index);
+    return `
+      <line class="chart-grid" x1="${x}" y1="${margin.top}" x2="${x}" y2="${svgHeight - margin.bottom}" opacity=".38"></line>
+      <text class="chart-axis" x="${x}" y="${svgHeight - 18}" text-anchor="middle">${day}</text>
+    `;
+  }).join("");
+  const lines = rows.map(function (row, rowIndex) {
+    const color = chartColors[rowIndex % chartColors.length];
+    const points = row.values.map(function (count, index) {
+      return `${xForDay(index)},${yForCount(count)}`;
+    }).join(" ");
+    const lastY = yForCount(row.values[row.values.length - 1]);
+    const labelY = Math.max(margin.top + 10, Math.min(svgHeight - margin.bottom - 8, lastY + (((rowIndex % 3) - 1) * 11)));
+    const circles = row.values.map(function (count, index) {
+      const day = chartDays[index];
+      return `
+        <circle class="chart-point" cx="${xForDay(index)}" cy="${yForCount(count)}" r="${count > 0 ? 4 : 2.5}" fill="${color}">
+          <title>${escapeHtml(row.name)} วันที่ ${day}: ${formatNumber(count)} คลิก</title>
+        </circle>
+      `;
+    }).join("");
+
+    return `
+      <polyline class="chart-line" points="${points}" stroke="${color}"></polyline>
+      ${circles}
+      <text class="chart-label" x="${svgWidth - margin.right + 12}" y="${labelY}" fill="${color}">${escapeHtml(row.name)}</text>
+    `;
+  }).join("");
+
+  chart.innerHTML = `
+    <svg class="link-chart-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="กราฟคลิกของแต่ละลิงก์ วันที่ 1 ถึง 30">
+      ${grid}
+      ${dayLabels}
+      <line class="chart-grid" x1="${margin.left}" y1="${svgHeight - margin.bottom}" x2="${svgWidth - margin.right}" y2="${svgHeight - margin.bottom}"></line>
+      <line class="chart-grid" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${svgHeight - margin.bottom}"></line>
+      ${lines}
+    </svg>
+  `;
+  legend.innerHTML = rows.map(function (row, index) {
+    const color = chartColors[index % chartColors.length];
+    return `
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:${color}"></span>
+        ${escapeHtml(row.name)} (${formatNumber(row.monthTotal)})
+      </span>
+    `;
+  }).join("");
+}
+
 async function apiRequest(url, options) {
   if (window.location.protocol === "file:") {
     throw new Error("file_mode");
@@ -833,6 +1084,7 @@ function renderStats(stats) {
   document.getElementById("lastUpdated").textContent = normalizedStats.updatedAt ? formatDate(normalizedStats.updatedAt) : "ยังไม่มีข้อมูล";
   document.getElementById("tableStatus").textContent = normalizedStats.updatedAt ? formatDate(normalizedStats.updatedAt) : "ยังไม่มีข้อมูล";
   renderLinkRows(normalizedStats);
+  renderLinkChart(normalizedStats);
 
   document.getElementById("statsRows").innerHTML = rows.map(function (button) {
     const percent = total > 0 ? Math.round((button.count / total) * 100) : 0;

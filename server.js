@@ -66,9 +66,15 @@ function createBioLinkRecord(id, name, createdAt) {
     url: "",
     count: 0,
     buttons: createEmptyButtonCounts(),
+    dailyClicks: {},
     createdAt: createdAt || new Date().toISOString(),
     lastClickedAt: null
   };
+}
+
+function getBangkokDateKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  return new Date(date.getTime() + (7 * 60 * 60 * 1000)).toISOString().slice(0, 10);
 }
 
 function cleanSlug(value) {
@@ -102,6 +108,7 @@ function normalizeBioLink(id, value) {
   const link = value && typeof value === "object" ? value : {};
   const normalizedId = cleanSlug(link.id || id) || directLinkId;
   const buttons = link.buttons && typeof link.buttons === "object" ? link.buttons : {};
+  const dailyClicks = link.dailyClicks && typeof link.dailyClicks === "object" ? link.dailyClicks : {};
 
   return {
     id: normalizedId,
@@ -110,6 +117,11 @@ function normalizeBioLink(id, value) {
     count: Number(link.count) || 0,
     buttons: Object.fromEntries(
       Object.keys(trackedButtonDefaults).map((buttonId) => [buttonId, Number(buttons[buttonId]) || 0])
+    ),
+    dailyClicks: Object.fromEntries(
+      Object.entries(dailyClicks)
+        .filter(([dateKey]) => /^\d{4}-\d{2}-\d{2}$/.test(dateKey))
+        .map(([dateKey, count]) => [dateKey, Number(count) || 0])
     ),
     createdAt: link.createdAt || null,
     lastClickedAt: link.lastClickedAt || null
@@ -291,6 +303,7 @@ async function handleClick(req, res) {
 
   const label = cleanText(body.label, trackedButtonDefaults[id]);
   const now = new Date().toISOString();
+  const dayKey = getBangkokDateKey(now);
   const source = getClickSource(body);
 
   writeQueue = writeQueue.then(async () => {
@@ -313,6 +326,7 @@ async function handleClick(req, res) {
     stats.links[source.id].url = stats.links[source.id].url || source.url || buildBioUrl(req, source.id);
     stats.links[source.id].count += 1;
     stats.links[source.id].buttons[id] = (Number(stats.links[source.id].buttons[id]) || 0) + 1;
+    stats.links[source.id].dailyClicks[dayKey] = (Number(stats.links[source.id].dailyClicks[dayKey]) || 0) + 1;
     stats.links[source.id].lastClickedAt = now;
 
     stats.events.unshift({
@@ -419,6 +433,19 @@ function statsToCsv(stats) {
       lines.push([link.id, link.name, link.url || "", link.count || 0, link.lastClickedAt || ""].map(csvCell).join(","));
     });
 
+  lines.push("");
+  lines.push(["bio_link_daily_stats"].map(csvCell).join(","));
+  lines.push(["link_id", "link_name", "date", "clicks"].map(csvCell).join(","));
+  Object.values(stats.links || {})
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .forEach((link) => {
+      Object.entries(link.dailyClicks || {})
+        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+        .forEach(([dateKey, count]) => {
+          lines.push([link.id, link.name, dateKey, count || 0].map(csvCell).join(","));
+        });
+    });
+
   return lines.join("\n");
 }
 
@@ -433,6 +460,7 @@ function resetClickCounts(stats) {
           ...normalized,
           count: 0,
           buttons: createEmptyButtonCounts(),
+          dailyClicks: {},
           lastClickedAt: null
         }
       ];
