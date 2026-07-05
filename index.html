@@ -546,7 +546,10 @@ async function loadBioConfig() {
   }
 
   try {
-    const response = await fetch("/api/bio-config", { cache: "no-store" });
+    const configUrl = currentBioSource.id && currentBioSource.id !== "direct"
+      ? `/api/bio-config?ref=${encodeURIComponent(currentBioSource.id)}`
+      : "/api/bio-config";
+    const response = await fetch(configUrl, { cache: "no-store" });
     if (!response.ok) {
       throw new Error("config_failed");
     }

@@ -71,6 +71,7 @@ function createBioLinkRecord(id, name, createdAt) {
     count: 0,
     buttons: createEmptyButtonCounts(),
     dailyClicks: {},
+    bioConfig: null,
     createdAt: createdAt || new Date().toISOString(),
     lastClickedAt: null
   };
@@ -171,6 +172,7 @@ function normalizeBioLink(id, value) {
   const normalizedId = cleanSlug(link.id || id) || directLinkId;
   const buttons = link.buttons && typeof link.buttons === "object" ? link.buttons : {};
   const dailyClicks = link.dailyClicks && typeof link.dailyClicks === "object" ? link.dailyClicks : {};
+  const bioConfig = link.bioConfig && typeof link.bioConfig === "object" ? normalizeBioConfig(link.bioConfig) : null;
 
   return {
     id: normalizedId,
@@ -185,6 +187,7 @@ function normalizeBioLink(id, value) {
         .filter(([dateKey]) => /^\d{4}-\d{2}-\d{2}$/.test(dateKey))
         .map(([dateKey, count]) => [dateKey, Number(count) || 0])
     ),
+    bioConfig,
     createdAt: link.createdAt || null,
     lastClickedAt: link.lastClickedAt || null
   };
@@ -446,6 +449,22 @@ function getAllStatsButtons(stats) {
 }
 
 async function handleGetBioConfig(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const sourceId = cleanSlug(url.searchParams.get("ref") || url.searchParams.get("source") || url.searchParams.get("bio"));
+
+  if (sourceId && sourceId !== directLinkId) {
+    const stats = await readStats();
+    const link = stats.links && stats.links[sourceId];
+    if (link && link.bioConfig) {
+      send(res, 200, {
+        ...link.bioConfig,
+        sourceId,
+        sourceName: link.name
+      });
+      return;
+    }
+  }
+
   send(res, 200, await readBioConfig());
 }
 
@@ -577,6 +596,7 @@ async function handleCreateBioLink(req, res) {
 
   writeQueue = writeQueue.then(async () => {
     const stats = await readStats();
+    const bioConfig = await readBioConfig();
     let id = requestedId || createRandomSlug();
 
     while (id === directLinkId || (stats.links[id] && !requestedId)) {
@@ -585,6 +605,7 @@ async function handleCreateBioLink(req, res) {
 
     if (!stats.links[id]) {
       stats.links[id] = createBioLinkRecord(id, name, now);
+      stats.links[id].bioConfig = bioConfig;
     } else {
       stats.links[id].name = name || stats.links[id].name;
     }
