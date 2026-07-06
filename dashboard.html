@@ -14,24 +14,26 @@
 }
 
 :root {
-  --bg: #070707;
-  --panel: #121316;
-  --panel-soft: #1b1c21;
-  --text: #f8f4e7;
-  --muted: rgba(248, 244, 231, .68);
-  --line: rgba(255, 255, 255, .12);
-  --accent: #ffd54a;
-  --accent-strong: #b98918;
-  --danger: #ff7676;
-  --ok: #7bdca8;
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --panel-soft: #f8fafc;
+  --text: #171717;
+  --muted: #667085;
+  --line: #e4e7ec;
+  --accent: #b98918;
+  --accent-strong: #8a6414;
+  --accent-soft: #fff7d6;
+  --danger: #c83e3e;
+  --danger-soft: #fff1f1;
+  --ok: #14855f;
+  --ok-soft: #e9f8f1;
   font-family: Arial, "Tahoma", sans-serif;
 }
 
 body {
   min-height: 100vh;
   color: var(--text);
-  background:
-    linear-gradient(180deg, #050505 0%, #111214 48%, #070707 100%);
+  background: var(--bg);
 }
 
 button,
@@ -54,10 +56,10 @@ button {
 .login-panel {
   width: min(420px, 100%);
   padding: 26px;
-  border: 1px solid rgba(255, 213, 74, .42);
-  border-radius: 12px;
-  background: rgba(18, 19, 22, .98);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, .42);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 20px 60px rgba(16, 24, 40, .12);
 }
 
 .eyebrow {
@@ -93,7 +95,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  background: #090a0c;
+  background: #fff;
   outline: none;
 }
 
@@ -105,7 +107,7 @@ textarea {
 input:focus,
 textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 213, 74, .12);
+  box-shadow: 0 0 0 3px rgba(185, 137, 24, .13);
 }
 
 .primary-btn,
@@ -121,21 +123,21 @@ textarea:focus {
 .primary-btn {
   width: 100%;
   border: 0;
-  color: #17120a;
-  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  background: var(--accent);
 }
 
 .ghost-btn {
   border: 1px solid var(--line);
   color: var(--text);
-  background: var(--panel-soft);
+  background: #fff;
   text-decoration: none;
 }
 
 .danger-btn {
-  border: 1px solid rgba(255, 118, 118, .42);
-  color: #fff;
-  background: rgba(255, 118, 118, .14);
+  border: 1px solid #f2b8b8;
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .error {
@@ -147,7 +149,7 @@ textarea:focus {
 
 .dashboard {
   display: none;
-  width: min(1120px, 100%);
+  width: min(1220px, 100%);
   min-height: 100vh;
   margin: 0 auto;
   padding: 24px;
@@ -166,11 +168,23 @@ body.is-authenticated .dashboard {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
 }
 
 .topbar h1 {
   margin-bottom: 0;
+}
+
+.topbar-subtitle {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .actions {
@@ -184,6 +198,65 @@ body.is-authenticated .dashboard {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.dashboard-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(12px);
+}
+
+.dashboard-nav a {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-nav a:hover,
+.dashboard-nav a:focus-visible {
+  color: var(--text);
+  border-color: var(--line);
+  background: var(--panel-soft);
+  outline: none;
+}
+
+.dashboard-section {
+  margin-bottom: 22px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.section-heading span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .link-builder {
@@ -215,9 +288,9 @@ body.is-authenticated .dashboard {
   gap: 10px;
   align-items: end;
   padding: 12px;
-  border: 1px solid rgba(255, 213, 74, .24);
+  border: 1px solid #f2d47e;
   border-radius: 8px;
-  background: rgba(255, 213, 74, .08);
+  background: var(--accent-soft);
 }
 
 .copy-box.is-visible {
@@ -301,7 +374,7 @@ body.is-authenticated .dashboard {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, .04);
+  background: var(--panel-soft);
 }
 
 .promo-row {
@@ -312,7 +385,7 @@ body.is-authenticated .dashboard {
   width: 74px;
   height: 54px;
   overflow: hidden;
-  border: 1px solid rgba(255, 213, 74, .28);
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: #050505;
 }
@@ -360,12 +433,12 @@ body.is-authenticated .dashboard {
 }
 
 .chart-axis {
-  fill: rgba(248, 244, 231, .58);
+  fill: #667085;
   font-size: 11px;
 }
 
 .chart-grid {
-  stroke: rgba(255, 255, 255, .1);
+  stroke: #e4e7ec;
   stroke-width: 1;
 }
 
@@ -377,7 +450,7 @@ body.is-authenticated .dashboard {
 }
 
 .chart-point {
-  stroke: #070707;
+  stroke: #fff;
   stroke-width: 2;
 }
 
@@ -405,7 +478,7 @@ body.is-authenticated .dashboard {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .08);
+  box-shadow: 0 0 0 2px rgba(16, 24, 40, .08);
 }
 
 .summary-grid {
@@ -419,7 +492,8 @@ body.is-authenticated .dashboard {
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(18, 19, 22, .94);
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
 }
 
 .summary-card {
@@ -516,7 +590,7 @@ tbody tr:last-child td {
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .08);
+  background: #eef2f6;
 }
 
 .bar span {
@@ -567,6 +641,15 @@ tbody tr:last-child td {
   .actions {
     justify-content: flex-start;
     margin-top: 14px;
+  }
+
+  .section-heading {
+    display: block;
+  }
+
+  .section-heading span {
+    display: block;
+    margin-top: 4px;
   }
 
   .summary-grid {
@@ -642,20 +725,35 @@ tbody tr:last-child td {
   <header class="topbar">
     <div>
       <p class="eyebrow">P9 BIO</p>
-      <h1>สถิติการกดปุ่ม</h1>
+      <h1>แดชบอร์ด Bio</h1>
+      <p class="topbar-subtitle">ดูสถิติ จัดการหน้า Bio สร้างลิงก์ และติดตามผลแยกตามแคมเปญ</p>
     </div>
 
     <div class="actions" aria-label="เครื่องมือแดชบอร์ด">
       <a class="ghost-btn" href="index.html">กลับหน้า Bio</a>
-      <a class="ghost-btn" href="#bioEditorTitle">จัดการหน้า Bio</a>
-      <a class="ghost-btn" href="#linkBuilderTitle">สร้างลิงก์ Bio</a>
-      <a class="ghost-btn" href="#linkChartTitle">กราฟลิงก์</a>
       <button class="ghost-btn" id="refreshBtn" type="button">รีเฟรช</button>
       <button class="ghost-btn" id="exportBtn" type="button">ส่งออก CSV</button>
       <button class="danger-btn" id="resetBtn" type="button">รีเซ็ตสถิติ</button>
       <button class="ghost-btn" id="logoutBtn" type="button">ออกจากระบบ</button>
     </div>
   </header>
+
+  <nav class="dashboard-nav" aria-label="หมวดหมู่แดชบอร์ด">
+    <a href="#overviewTitle">ภาพรวม</a>
+    <a href="#bioEditorTitle">จัดการ Bio</a>
+    <a href="#linkBuilderTitle">สร้างลิงก์</a>
+    <a href="#linkChartTitle">กราฟลิงก์</a>
+    <a href="#buttonStatsTitle">สถิติปุ่ม</a>
+    <a href="#recentTitle">คลิกล่าสุด</a>
+  </nav>
+
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h2 id="overviewTitle">ภาพรวมวันนี้</h2>
+    </div>
+    <span>สรุปยอดคลิกและสถานะล่าสุดของหน้า Bio</span>
+  </div>
 
   <section class="summary-grid" aria-label="สรุปสถิติ">
     <article class="summary-card">
