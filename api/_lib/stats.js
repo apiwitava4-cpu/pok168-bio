@@ -1,4 +1,4 @@
-const { redisCommand, redisPipeline } = require("./redis");
+const { hasRedisConfig, redisCommand, redisPipeline } = require("./redis");
 const { isMetaCapiConfigured, sendMetaCapiClick } = require("./meta-capi");
 
 const trackedButtonDefaults = {
@@ -271,6 +271,39 @@ async function recordClick(input, req) {
   const now = new Date().toISOString();
   const dayKey = getBangkokDateKey(now);
   const source = getClickSource(input);
+
+  if (!hasRedisConfig()) {
+    const event = {
+      id,
+      label: cleanText(input.label, trackedButtonDefaults[id]),
+      href: cleanText(input.href),
+      page: cleanText(input.page),
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceUrl: source.url || buildBioUrl(req, source.id),
+      clickedAt: now,
+      metaEventId: cleanText(input.metaEventId),
+      metaEventName: cleanText(input.metaEventName),
+      ip: getClientIp(req),
+      userAgent: cleanText(req.headers["user-agent"])
+    };
+
+    if (isMetaCapiConfigured()) {
+      sendMetaCapiClick({ req, input, event }).catch((error) => {
+        console.warn(`Meta CAPI request failed: ${error.message || "unknown_error"}`);
+      });
+    }
+
+    return {
+      ok: true,
+      id,
+      sourceId: source.id,
+      totalClicks: 0,
+      metaCapiQueued: isMetaCapiConfigured(),
+      storageSkipped: true
+    };
+  }
+
   const existingLinkRaw = await redisCommand(["HGET", keys.links, source.id]);
   let linkRecord = createBioLinkRecord(source.id, source.name, now);
   if (existingLinkRaw) {

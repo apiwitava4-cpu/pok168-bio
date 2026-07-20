@@ -1,0 +1,7 @@
+.env
+.env.local
+.vercel
+.git
+data
+node_modules
+*.log
