@@ -13,6 +13,12 @@ services:
         value: admin
       - key: DASHBOARD_PASSWORD
         sync: false
+      - key: META_PIXEL_ID
+        value: "1486638606565223"
+      - key: META_CAPI_ACCESS_TOKEN
+        sync: false
+      - key: META_GRAPH_API_VERSION
+        value: v25.0
     disk:
       name: p9-bio-data
       mountPath: /var/data

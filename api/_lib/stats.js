@@ -1,4 +1,5 @@
 const { redisCommand, redisPipeline } = require("./redis");
+const { isMetaCapiConfigured, sendMetaCapiClick } = require("./meta-capi");
 
 const trackedButtonDefaults = {
   "visit-site": "เข้าชมหน้าเว็บ",
@@ -291,6 +292,8 @@ async function recordClick(input, req) {
     sourceName: linkRecord.name,
     sourceUrl: linkRecord.url,
     clickedAt: now,
+    metaEventId: cleanText(input.metaEventId),
+    metaEventName: cleanText(input.metaEventName),
     ip: getClientIp(req),
     userAgent: cleanText(req.headers["user-agent"])
   };
@@ -309,13 +312,20 @@ async function recordClick(input, req) {
     ["LTRIM", keys.events, 0, 999]
   ]);
 
+  if (isMetaCapiConfigured()) {
+    sendMetaCapiClick({ req, input, event }).catch((error) => {
+      console.warn(`Meta CAPI request failed: ${error.message || "unknown_error"}`);
+    });
+  }
+
   return {
     ok: true,
     id,
     sourceId: source.id,
     buttonCount: Number(buttonCount) || 0,
     linkCount: Number(linkCount) || 0,
-    totalClicks: Number(totalClicks) || 0
+    totalClicks: Number(totalClicks) || 0,
+    metaCapiQueued: isMetaCapiConfigured()
   };
 }
 

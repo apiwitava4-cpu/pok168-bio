@@ -5,6 +5,10 @@ const http = require("http");
 const path = require("path");
 
 const rootDir = __dirname;
+loadLocalEnv(path.join(rootDir, ".env"));
+
+const { isMetaCapiConfigured, sendMetaCapiClick } = require("./api/_lib/meta-capi");
+
 const dataDir = path.resolve(process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(rootDir, "data"));
 const statsFile = path.join(dataDir, "click-stats.json");
 const bioConfigFile = path.join(dataDir, "bio-config.json");
@@ -39,6 +43,31 @@ const mimeTypes = {
 
 let writeQueue = Promise.resolve();
 let configWriteQueue = Promise.resolve();
+
+function loadLocalEnv(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+
+    const index = trimmed.indexOf("=");
+    if (index === -1) {
+      return;
+    }
+
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim().replace(/^['"]|['"]$/g, "");
+    if (key && process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  });
+}
 
 function createClickStats() {
   return {
@@ -567,7 +596,7 @@ async function handleClick(req, res) {
     stats.links[source.id].dailyClicks[dayKey] = (Number(stats.links[source.id].dailyClicks[dayKey]) || 0) + 1;
     stats.links[source.id].lastClickedAt = now;
 
-    stats.events.unshift({
+    const clickEvent = {
       id,
       label,
       href: cleanText(body.href),
@@ -576,13 +605,24 @@ async function handleClick(req, res) {
       sourceName: stats.links[source.id].name,
       sourceUrl: stats.links[source.id].url,
       clickedAt: now,
+      metaEventId: cleanText(body.metaEventId),
+      metaEventName: cleanText(body.metaEventName),
       ip: getClientIp(req),
       userAgent: cleanText(req.headers["user-agent"])
-    });
+    };
+
+    stats.events.unshift(clickEvent);
     stats.events = stats.events.slice(0, 1000);
 
     await writeStats(stats);
-    send(res, 201, { ok: true, totalClicks: stats.totalClicks, sourceId: source.id });
+
+    if (isMetaCapiConfigured()) {
+      sendMetaCapiClick({ req, input: body, event: clickEvent }).catch((error) => {
+        console.warn(`Meta CAPI request failed: ${error.message || "unknown_error"}`);
+      });
+    }
+
+    send(res, 201, { ok: true, totalClicks: stats.totalClicks, sourceId: source.id, metaCapiQueued: isMetaCapiConfigured() });
   });
 
   await writeQueue;

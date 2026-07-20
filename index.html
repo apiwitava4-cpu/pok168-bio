@@ -6,6 +6,38 @@
 <title>P9 BIO</title>
 <meta name="theme-color" content="#090704">
 
+<!-- Meta Pixel Code -->
+<script>
+window.P9_META_PIXEL_ID = "1486638606565223";
+
+(function loadMetaPixel(pixelId) {
+  if (!pixelId) {
+    return;
+  }
+
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return;
+    n = f.fbq = function () {
+      n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+    };
+    if (!f._fbq) f._fbq = n;
+    n.push = n;
+    n.loaded = true;
+    n.version = "2.0";
+    n.queue = [];
+    t = b.createElement(e);
+    t.async = true;
+    t.src = v;
+    s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s);
+  }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+
+  fbq("init", pixelId);
+  fbq("track", "PageView");
+})(window.P9_META_PIXEL_ID);
+</script>
+<!-- End Meta Pixel Code -->
+
 <style>
 * {
   margin: 0;
@@ -289,6 +321,9 @@ footer {
 </head>
 
 <body>
+<noscript>
+  <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1486638606565223&ev=PageView&noscript=1" alt="">
+</noscript>
 <main class="card">
   <div class="profile" aria-label="P9">
     <img id="bioProfileImage" src="p9/brand-profile.webp" alt="P9">
@@ -466,6 +501,49 @@ function getCurrentBioSource() {
 
 const currentBioSource = getCurrentBioSource();
 
+const metaPixelButtonEvents = {
+  "visit-site": { method: "trackCustom", name: "BioVisitSiteClick" },
+  register: { method: "track", name: "Lead" },
+  promotion: { method: "trackCustom", name: "BioPromotionOpen" },
+  "contact-admin": { method: "track", name: "Contact" }
+};
+
+function createMetaEventId(id) {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+
+  return `p9-bio-${id || "event"}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1")}=([^;]*)`)
+  );
+
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function getMetaPixelEventConfig(id) {
+  return metaPixelButtonEvents[id] || { method: "trackCustom", name: "BioButtonClick" };
+}
+
+function trackMetaPixelClick(clickEvent) {
+  if (typeof window.fbq !== "function") {
+    return;
+  }
+
+  const eventConfig = getMetaPixelEventConfig(clickEvent.id);
+  const eventData = {
+    content_name: clickEvent.label,
+    content_category: "bio_button",
+    button_id: clickEvent.id,
+    source_id: clickEvent.sourceId
+  };
+
+  window.fbq(eventConfig.method, eventConfig.name, eventData, { eventID: clickEvent.metaEventId });
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -639,6 +717,7 @@ function recordClick(button) {
   const label = button.dataset.trackLabel || trackedButtonDefaults[id] || button.textContent.trim();
   const now = new Date().toISOString();
   const stats = loadClickStats();
+  const metaEventConfig = getMetaPixelEventConfig(id);
   const clickEvent = {
     id: id,
     label: label,
@@ -647,7 +726,9 @@ function recordClick(button) {
     sourceId: currentBioSource.id,
     sourceName: currentBioSource.name,
     sourceUrl: currentBioSource.url,
-    clickedAt: now
+    clickedAt: now,
+    metaEventId: createMetaEventId(id),
+    metaEventName: metaEventConfig.name
   };
 
   if (!stats.buttons[id]) {
@@ -663,7 +744,12 @@ function recordClick(button) {
   stats.events = stats.events.slice(0, 200);
 
   saveClickStats(stats);
-  sendClickToBackend(clickEvent);
+  trackMetaPixelClick(clickEvent);
+  sendClickToBackend({
+    ...clickEvent,
+    fbp: getCookie("_fbp"),
+    fbc: getCookie("_fbc")
+  });
 }
 
 const modal = document.getElementById("promoModal");
