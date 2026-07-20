@@ -221,6 +221,10 @@ function createEmptyStats() {
 }
 
 async function getStats() {
+  if (!hasRedisConfig()) {
+    return createEmptyStats();
+  }
+
   const [total, updatedAt, rawCounts, rawLastClicks, rawEvents, rawLinks, rawLinkCounts, rawLinkLastClicks, rawLinkButtonCounts, rawLinkDailyCounts] = await redisPipeline([
     ["GET", keys.total],
     ["GET", keys.updatedAt],
@@ -372,6 +376,17 @@ async function createBioLink(input, req) {
     id = createRandomSlug();
   }
 
+  if (!hasRedisConfig()) {
+    return {
+      ok: true,
+      link: {
+        ...createBioLinkRecord(id, name, now),
+        url: buildBioUrl(req, id)
+      },
+      storageSkipped: true
+    };
+  }
+
   const existingRaw = await redisCommand(["HGET", keys.links, id]);
   let link = createBioLinkRecord(id, name, now);
   if (existingRaw) {
@@ -393,6 +408,10 @@ async function createBioLink(input, req) {
 }
 
 async function resetStats() {
+  if (!hasRedisConfig()) {
+    return { ok: true, storageSkipped: true };
+  }
+
   await redisCommand(["DEL", keys.total, keys.updatedAt, keys.counts, keys.lastClicks, keys.events, keys.linkCounts, keys.linkLastClicks, keys.linkButtonCounts, keys.linkDailyCounts]);
   return { ok: true };
 }

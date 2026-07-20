@@ -197,6 +197,17 @@ footer {
   font-size: 13px;
 }
 
+footer a {
+  color: rgba(255, 241, 167, .72);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  color: #fff1a7;
+  outline: none;
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -369,7 +380,7 @@ footer {
 
   </div>
 
-  <footer id="bioFooter">&copy; P9 BIO</footer>
+  <footer><span id="bioFooter">&copy; P9 BIO</span> · <a href="/dashboard">Dashboard</a></footer>
 </main>
 
 <div class="modal" id="promoModal" aria-hidden="true">

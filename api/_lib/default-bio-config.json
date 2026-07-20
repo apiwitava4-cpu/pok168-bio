@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "updatedAt": null,
+  "title": "P9",
+  "subtitle": "บ้านป๊อกเด้งออนไลน์",
+  "profileImage": "p9/brand-profile.webp",
+  "backgroundImage": "p9/bio-background.webp",
+  "footer": "© P9 BIO",
+  "buttons": [
+    {
+      "id": "visit-site",
+      "label": "เข้าชมหน้าเว็บ",
+      "href": "https://www.pok9thai.com/?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      "trackId": "visit-site",
+      "action": "link",
+      "enabled": true,
+      "targetBlank": true
+    },
+    {
+      "id": "register",
+      "label": "สมัครสมาชิก",
+      "href": "https://ag.p9deng.com/?code=AG0239EW&utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      "trackId": "register",
+      "action": "link",
+      "enabled": true,
+      "targetBlank": true
+    },
+    {
+      "id": "promotion",
+      "label": "โปรโมชั่น",
+      "href": "#",
+      "trackId": "promotion",
+      "action": "promo",
+      "enabled": true,
+      "targetBlank": false
+    },
+    {
+      "id": "contact-admin",
+      "label": "ติดต่อแอดมิน",
+      "href": "https://lin.ee/tQqumsi?utm_source=bio&utm_medium=button&utm_campaign=p9_service",
+      "trackId": "contact-admin",
+      "action": "link",
+      "enabled": true,
+      "targetBlank": true
+    }
+  ],
+  "promoImages": [
+    {
+      "id": "promo-new-member",
+      "src": "promo/promo-new-member.webp",
+      "caption": "สมาชิกใหม่",
+      "alt": "โปรโมชั่นสมาชิกใหม่",
+      "enabled": true
+    },
+    {
+      "id": "promo-daily-10",
+      "src": "promo/promo-daily-10.webp",
+      "caption": "รับ 10% ทุกวัน",
+      "alt": "โปรโมชั่นรับ 10 เปอร์เซ็นต์ทุกวัน",
+      "enabled": true
+    },
+    {
+      "id": "promo-cashback-2",
+      "src": "promo/promo-cashback-2.webp",
+      "caption": "คืนยอด 2%",
+      "alt": "โปรโมชั่นคืนยอด 2 เปอร์เซ็นต์",
+      "enabled": true
+    },
+    {
+      "id": "promo-special-event",
+      "src": "promo/promo-special-event.webp",
+      "caption": "กิจกรรมพิเศษ",
+      "alt": "โปรโมชั่นกิจกรรมพิเศษ",
+      "enabled": true
+    },
+    {
+      "id": "promo-pokdeng-online",
+      "src": "promo/promo-pokdeng-online.webp",
+      "caption": "ป๊อกเด้งออนไลน์",
+      "alt": "โปรโมชั่นป๊อกเด้งออนไลน์",
+      "enabled": true
+    },
+    {
+      "id": "promo-5",
+      "src": "promo/promo-5.webp",
+      "caption": "โปรโมชั่น 5",
+      "alt": "โปรโมชั่น 5",
+      "enabled": true
+    }
+  ]
+}
