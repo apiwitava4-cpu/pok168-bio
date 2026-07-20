@@ -12,6 +12,10 @@
     {
       "source": "/api/export.csv",
       "destination": "/api/export"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://pok168-bio.onrender.com/uploads/$1"
     }
   ]
 }

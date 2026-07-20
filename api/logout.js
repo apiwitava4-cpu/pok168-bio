@@ -1,12 +1,9 @@
-const { clearSessionCookie } = require("./_lib/auth");
+const { proxyToBackend } = require("./_lib/proxy");
 
-module.exports = function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    res.status(405).json({ ok: false, error: "method_not_allowed" });
-    return;
+module.exports = async function handler(req, res) {
+  try {
+    await proxyToBackend(req, res, "/api/logout");
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ ok: false, error: error.message || "server_error" });
   }
-
-  clearSessionCookie(res);
-  res.status(200).json({ ok: true });
 };
